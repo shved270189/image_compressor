@@ -167,21 +167,25 @@ Preserve built-asset smoke coverage and API 404 responses. Restart the backend a
 
 ## 8. Crosscutting concepts
 
-<!-- 🎯 Why: CROSS-CUTTING PATTERNS spanning several modules: logging, errors, authorization, ID
-     strategy, events, caching. ⭐ The second-densest section. A pattern inside one module is NOT
-     here; a project-wide convention belongs in the convention file.
-     📋 Write: a table — concept / convention / where defined. One row per concept.
-     📌 e.g. «sortable time-based IDs generated in the app layer» as a default from the convention file. -->
-
-| Concept | Convention | Where defined |
+| Concept | Convention | Source |
 |---|---|---|
-| Logging | <e.g. structured, fields `module=<name>`> | <convention file §X or here> |
-| Authentication | <e.g. token-based via middleware> | <convention file §X> |
-| Error handling | <e.g. domain sentinel → ports error mapping → JSON> | <convention file §X> |
-| ID strategy | <e.g. sortable time-based ID in the app layer> | <convention file §X> |
-| Internationalisation | <e.g. N/A, single language> | — |
-| Observability | <e.g. tracing on the request boundary> | — |
-| Events | <module-specific patterns, if any> | <here> |
+| Authentication and isolation | No accounts or ownership claims; no history, persistent result IDs or result lookup | Spec AC-14; foundation ADR 0003 |
+| Errors | HTTP validation and standard FastAPI errors at the boundary; image functions report failures without HTTP objects; readable UI errors retain input when recoverable | Foundation ADR 0002; spec AC-11, AC-12, AC-15 |
+| Logging | No pixels, original filenames, identifying metadata or raw uploads in logs, including error details | Spec §6.1; owner-approved privacy policy |
+| Browser state | React local state for the current form; an operation identity/currentness guard prevents stale or duplicate completion; no image persistence or restoration | Spec AC-03, AC-13–AC-16 |
+| Resource ownership | Each upload, image, output and object URL has an explicit owner and cleanup path; see the table below | Foundation ADR 0003; ADR 0004 |
+| Accessibility and motion | Native controls, labels, keyboard access, visible focus, manual readable-contrast acceptance and reduced motion without loss of function | Spec §6; existing theme |
+| Storage and events | No database, migrations, object storage, background queue or application event bus | Foundation ADR 0003 |
+
+| Resource | Owner | Release boundary |
+|---|---|---|
+| Selected File and Preview URL | Current browser selection | New selection, successful handoff/reset or page teardown; a failed Preview is discarded |
+| Multipart parser and UploadFile | Current server request | Close partial uploads on parse failure/disconnection; close completed uploads once image processing no longer needs them |
+| Decoder, native image and intermediate images | Image-processing function | Structured cleanup on success or exception; interruption cannot discard ownership while native work is still using a resource |
+| Encoded output | Current response | Release processing temporaries after encoding and response-owned output after completion or failure |
+| Result Blob URL | Browser download handoff | Release as soon as the browser no longer needs the URL for handoff; form reset must not revoke it prematurely |
+
+The server must enforce limits even when form controls are bypassed. Multipart storage needs bounded file and field handling; a parser's text-part limit alone must not be mistaken for a file-byte limit. The cleanup gate includes incomplete multipart input, not only successful UploadFile creation. Detailed boundary mechanics and the wire contract are verified before implementation planning rather than hidden behind an invented universal timeout.
 
 ## 9. Architecture decisions
 
