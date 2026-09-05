@@ -18,7 +18,7 @@ The project owner needs a personal local single-page tool to prepare one image u
 
 The trigger is the owner's existing personal need. There is no launch deadline, usage-frequency commitment or public-hosting requirement.
 
-The committed approach is one responsive form with an optional original preview above it when the browser can display the selected file, optional dimension limits, an output-format choice, a clear processing action and a downloadable result with actual dimensions and file size. Existing adjacent tools already cover much of this need; the reason to build remains the owner's own workflow, not an asserted market advantage.
+The committed approach is one responsive form with an optional original preview above it when the browser can display the selected file, optional dimension limits, an output-format choice, a clear processing action and an automatic result download followed by a clean form for the next conversion. No result dimensions, format, file size or manual download action remain on the page. Existing adjacent tools already cover much of this need; the reason to build remains the owner's own workflow, not an asserted market advantage.
 
 Processing requires a file and at least one supplied transformation parameter. The form supplies JPEG by default for every input, so choosing a non-empty file within the byte limit enables processing without a manual parameter change; content validation occurs on the server when processing is submitted. Both dimension limits remain independently optional. If dimensions are supplied without an output format, the output is JPEG for every input format. Supplying neither dimensions nor an output format remains an error; the omitted-format fallback does not count as a supplied parameter. Preview stays entirely on the frontend, unsupported preview formats are silently omitted and no file is sent to the server until processing is submitted. Performance timing targets and timing measurements are explicitly excluded by the owner.
 
@@ -54,8 +54,8 @@ Processing requires a file and at least one supplied transformation parameter. T
 
 ### US-04: Download the current result
 **As a** Власник картинки
-**I want** to see actual dimensions and file size and download the Результат
-**So that** I can use the completed file without overwriting the Оригінал.
+**I want** the Результат to download automatically after successful processing and the form to reset
+**So that** I can use the completed file without overwriting the Оригінал and immediately select the next image.
 
 ### US-05: Recover from rejected processing
 **As a** Власник картинки
@@ -75,9 +75,9 @@ Processing requires a file and at least one supplied transformation parameter. T
 **Then** a supported Preview appears above the form, preserves the complete image and correct orientation and is prepared entirely on the owner's device without sending the file for preview generation; when the browser cannot display the file, no Preview or broken-image placeholder is shown, and this absence does not block processing, including for HEIC.
 
 ### AC-03 (US-01, US-04) — cross-context
-**Given** an Оригінал already has a Preview or Результат,
+**Given** an Оригінал has been selected,
 **When** Власник картинки makes a new file selection,
-**Then** the previous Preview and Результат disappear, dimensions reset to empty and format resets to JPEG, including when the newly selected file is empty or above the byte limit; delayed work for the old selection must never replace the current Preview or Результат, and an unavailable or failed Preview is omitted rather than displaying the old picture, a broken-image placeholder or a processing error.
+**Then** the previous Preview disappears, dimensions reset to empty and format resets to JPEG, including when the newly selected file is empty or above the byte limit; delayed work for an old selection or completed operation must never replace the current Preview, repopulate a reset form or trigger another download. An unavailable or failed Preview is omitted rather than displaying the old picture, a broken-image placeholder or a processing error.
 
 ### AC-04 (US-02) — happy
 **Given** a correctly oriented Оригінал measuring 2400 by 1200 pixels,
@@ -126,8 +126,8 @@ Processing requires a file and at least one supplied transformation parameter. T
 
 ### AC-13 (US-04) — cross-context
 **Given** successful processing for the current selection,
-**When** Власник картинки inspects and downloads the Результат,
-**Then** the displayed width, height, format and file size describe that exact downloaded file, the filename extension matches its format and the Оригінал remains untouched. Changing either dimension limit or the output format, or starting another processing operation, immediately removes the previous Результат and its download action; a failed new operation does not restore the previous Результат.
+**When** the current operation's complete Результат is ready,
+**Then** the page initiates exactly one automatic browser download without a separate download action; the file has the requested output format and matching filename extension, and the Оригінал remains untouched. After handing the file to the browser for download, the page returns to the initial form without reloading: the selected file, Preview, Результат and errors are removed, both dimension limits become empty and format resets to JPEG. File selection is available, transformation controls are disabled or hidden and processing is disabled until another eligible file is selected. No result characteristics or repeat-download action remain on the page. Reset must not interrupt the initiated download and does not wait for confirmation that the browser saved the file to disk. The next selected file starts an independent conversion, including when it is the same file as before.
 
 ### AC-14 (US-04) — authorization
 **Given** a Результат belongs to a different operation or is no longer available to the current page,
@@ -137,12 +137,12 @@ Processing requires a file and at least one supplied transformation parameter. T
 ### AC-15 (US-05) — error
 **Given** processing is in progress,
 **When** Власник картинки waits, processing fails or the page closes,
-**Then** the form disables file selection, all transformation parameter controls and repeat submission while processing, shows a truthful busy state without fabricated percentages, restores the controls and retry with the selected file and parameters after a recoverable error, and offers no result restoration after closing or reloading the page. Successful completion also restores the controls; only the current operation may display a Результат.
+**Then** the form disables file selection, all transformation parameter controls and repeat submission while processing, shows a truthful busy state without fabricated percentages, restores the controls and retry with the selected file and parameters after a recoverable error, and offers no result restoration after closing or reloading the page. Successful completion initiates the automatic download and resets the form as specified in AC-13; only the current operation may initiate that download, and no stale or duplicate completion may initiate it again.
 
 ### AC-16 (US-01, US-04, US-05) — cross-context
 **Given** processing has completed, failed or been interrupted,
 **When** that operation's lifecycle ends,
-**Then** the application retains no server-side original or result for future retrieval; preview generation never sends a file to the server. The current page may retain its Preview until a new file selection or page closure. It may retain its Результат until a new file selection, a dimension or output-format change, another processing operation starts, or the page closes. Each removal releases the obsolete preview or download resources immediately.
+**Then** the application retains no server-side original or result for future retrieval; preview generation never sends a file to the server. The current page may retain its selected file, parameters and Preview through a recoverable error, until a new file selection, successful download handoff or page closure. Successful handoff clears the form and immediately releases obsolete Preview resources. Result resources exist only for handing the download to the browser and must be released as soon as they are no longer needed by that handoff, without interrupting the initiated download; no result remains available for another application download. Failure and interruption release operation resources without restoring a prior result. Closing or reloading the page restores neither input nor result.
 
 ## 6. Non-functional requirements
 
@@ -150,7 +150,7 @@ Processing requires a file and at least one supplied transformation parameter. T
 |---|---|---|
 | Input limits | At most 20,000,000 bytes and 40,000,000 decoded pixels of the selected static image; equality allowed | Processing boundary tests before expensive server decoding; selection checks reject empty files and files above the byte limit before preparing a local Preview, while server content, animation and pixel-count checks run on submission |
 | Preview locality | Zero file-upload requests caused by selection, parameter editing or Preview preparation | Browser network checks; native image display using a local object URL, without an added decoder dependency or a server preview operation |
-| Form concurrency | At most one submitted processing operation from the current form; file selection and all transformation parameter controls disabled while processing | Duplicate-submit and disabled-control checks, including restoration after success or recoverable failure |
+| Form concurrency | At most one submitted processing operation from the current form; file selection and all transformation parameter controls disabled while processing | Duplicate-submit and disabled-control checks, including clean-form reset after successful download handoff and retained input after recoverable failure |
 | Transient resources | Zero retained upload handles, decoded images or result buffers after their operation lifecycle; zero image content in logs | Success, failure and interruption lifecycle tests and log inspection; allocator-reserved memory is not treated as a retained image |
 | Accessibility | Every interactive control is keyboard-usable with visible focus; every label, error and action passes the project owner's manual readable-contrast review; with reduced motion, zero decorative animations and zero loss of functionality | Full keyboard flow, visible-focus review, manual contrast acceptance by the project owner without numeric contrast thresholds, and reduced-motion browser check |
 | Responsive UI | Complete flow at viewport widths 360 and 1280 CSS pixels with no horizontal page overflow | Browser visual review at both widths |
@@ -171,13 +171,13 @@ Acceptance indicators rather than usage analytics; all targets are due before th
 
 - Supported transformation coverage — baseline 0 existing processing scenarios; target all 12 input-to-output format combinations pass with valid control fixtures, including static HEIC primary-image handling.
 - Constraint and error coverage — baseline 0 feature validation scenarios; target all agreed bound, orientation, transparency, metadata, invalid-input and interruption checks pass.
-- Complete user journey — baseline 0 implemented image-to-download journeys; target the complete selection-to-download flow, including displayed and unavailable Preview cases, passes at both specified viewport widths, with keyboard-only interaction, visible focus, readable contrast and decorative motion disabled under reduced motion.
+- Complete user journey — baseline 0 implemented image-to-download journeys; target the complete selection-to-automatic-download-and-reset flow, including a second conversion, displayed and unavailable Preview cases, passes at both specified viewport widths, with keyboard-only interaction, visible focus, readable contrast and decorative motion disabled under reduced motion.
 
 No analytics collection or timing measurement is added.
 
 ## 8. Open questions
 
-None at the product-requirement level. The Tech Lead must verify HEIC decoder/platform feasibility and the resource-cleanup approach during design, before sdd:tasks; implementation must prove cleanup on success, failure and interruption. These checks do not permit dropping accepted HEIC conversion behavior. HEIC Preview is optional and depends solely on native browser support.
+None at the product-requirement level. The Tech Lead must verify HEIC decoder/platform feasibility and the resource-cleanup approach, including automatic download handoff without reset interrupting the download, during design, before sdd:tasks; implementation must prove cleanup on success, failure and interruption. These checks do not permit dropping accepted HEIC conversion behavior. HEIC Preview is optional and depends solely on native browser support.
 
 ## Clarification log — 2026-09-06
 
@@ -186,9 +186,13 @@ Depth: medium. Independent clean-context ambiguity review completed. Six finding
 | Class | Reference | Outcome | Before / after |
 |---|---|---|---|
 | conflicting-requirement | §6 Accessibility and motion | resolved | Unqualified decorative-motion ban / decorative motion removed only under reduced motion; ordinary state-change animations retained |
-| under-specified-AC | AC-03, AC-13, AC-15, AC-16 | resolved | Result lifetime and editing during processing unspecified / parameter changes and new processing remove the result immediately; processing locks controls; recovery retains the input and parameters |
+| under-specified-AC | AC-03, AC-13, AC-15, AC-16 | resolved | Result lifetime and editing during processing unspecified / processing locks controls; recovery retains the input and parameters; the initially agreed retained-result lifetime is superseded by the UX amendment below |
 | under-specified-AC | §1, AC-11 | resolved | Dimensions without an output format unspecified / JPEG fallback for supplied dimensions; no supplied parameters remains an error |
 | under-specified-AC | AC-08 | resolved | Warning depends on unspecified advance transparency knowledge / conditional warning for every JPEG output, including the default |
 | under-specified-AC | AC-01, AC-03, AC-12, §6 Input limits | resolved | Valid-selection timing unspecified / local empty-file and byte-limit checks; server content, animation and pixel checks on submission; every new selection resets prior state |
 | under-specified-AC | AC-05 | resolved | Whole-pixel rounding and degree of reduction unspecified / largest fitting scale; nearest-pixel rounding with halves up and minimum one pixel |
 | unmeasured-NFR | §6 Accessibility | rejected | Numeric contrast thresholds proposed / project owner explicitly retains manual readable-contrast acceptance without numeric thresholds |
+
+## UX amendment — 2026-09-06
+
+The project owner explicitly replaced manual result inspection and download with automatic download and a clean form. On success, initiate one download and reset the form after browser handoff; show neither result characteristics nor a manual download action. On recoverable failure, retain the selected file and parameters for retry. This supersedes the earlier retained-result lifetime decision in the clarification log; all other transformation, input-limit and privacy requirements remain unchanged. US-04, AC-03, AC-13, AC-15 and AC-16 reflect this decision without changing their identifiers.
