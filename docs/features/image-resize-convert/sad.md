@@ -83,50 +83,34 @@ The form defaults to JPEG on every selection and reset. Either dimension is opti
 
 ## 5. Building block view
 
-<!-- 🎯 Why: INTERNAL DECOMPOSITION — modules, containers, datastores. The static topology: who
-     may talk to whom. Without §5, §6 (the flows) has no vocabulary of participants.
-     📋 Write: 1 ¶ on the style (layered / hexagonal / clean / event-driven) + a folder tree + a
-     C4Container block.
-     📌 Draw ONE Container per declared `target_surface` (frontmatter): a fullstack
-     [backend-service, web-frontend] = a backend-API container + a web/SPA container; a
-     [backend-service, mobile-app] = the API + the mobile app. The Container(web, …) line below is
-     just one surface's container — swap/add per what was declared in §4. → _shared/surfaces.md
-     📌 e.g. «web app, content API, media worker, datastore, object store, CDN». -->
+Use the existing division between the browser, the HTTP boundary and ordinary image functions. The backend calls image functions directly; it does not introduce repository, adapter, service-class or worker layers. Image functions do not depend on FastAPI request or response objects.
 
-<One paragraph: layered / hexagonal / clean / event-driven, and why.>
+| Location | Responsibility |
+|---|---|
+| `frontend/src/App.tsx` | SCR-01 form, current selection and operation state, optional Preview, download and reset |
+| `frontend/src/index.css` | Existing theme tokens and motion rules |
+| `backend/main.py` | HTTP validation, request/response resource ownership and mapping processing failures to HTTP errors |
+| `backend/images.py` | Decode, orient, preserve color interpretation, calculate bounded dimensions and encode |
+| `tests/` | Existing smoke coverage plus specified processing and lifecycle behavior when implemented |
 
-**Internal decomposition:**
+Pillow and pillow-heif are libraries inside Application, not containers. Native decoding must not block the asynchronous HTTP event loop. Its execution and cleanup remain owned until the image function finishes; browser cancellation is not a guarantee that native decoding stops immediately. At most one submission is promised per current form, not as a new system-wide concurrency guarantee.
 
-```
-<e.g. modules/<feature>/>
-├── domain/       <entities + sentinel errors>
-├── app/          <use cases / services>
-├── infra/        <repository + integration impl>
-├── ports/        <handlers, DTOs, error mapping>
-└── wiring        <self-wiring entry point>
-```
-
-**C4 Container (L2):** <!-- syntax → references/c4-mermaid-syntax.md. Real names, no <placeholder> stubs. ONE Container per declared target_surface (frontmatter); the web container below is one example surface. -->
+**C4 Container (L2):**
 
 ```mermaid
 C4Container
-    title <feature> — Containers
-
-    Person(actor, "<Actor>")
-
-    Container_Boundary(app, "<Our system>") {
-        Container(web, "<Web/UI>", "<technology>", "<purpose>")
-        Container(api, "<API/handler>", "<technology>", "<purpose>")
-        ContainerDb(db, "<Datastore>", "<technology>", "<purpose>")
+    title Image resize and conversion - Containers
+    Person(owner, "Власник картинки", "Uses the local application")
+    Container_Boundary(compressor, "Image compressor") {
+        Container(web, "Browser UI", "React, TypeScript, Tailwind", "Form, local Preview and automatic download")
+        Container(app, "Application", "FastAPI, Pillow, pillow-heif", "Validation, image processing and built frontend serving")
     }
-
-    System_Ext(ext, "<External>", "<purpose>")
-
-    Rel(actor, web, "<interaction>", "<protocol>")
-    Rel(web, api, "<calls>")
-    Rel(api, db, "<reads/writes>", "<driver>")
-    Rel(api, ext, "<emits>", "<protocol>")
+    Rel(owner, web, "Selects an Оригінал and requests a Результат")
+    Rel(web, app, "Submits one processing operation and receives its result", "Relative API request")
+    Rel(app, web, "Serves built frontend assets", "HTTP")
 ```
+
+The owner confirmed these two containers and their responsibility split. Development uses the existing Vite proxy; the built application serves frontend assets directly.
 
 ## 6. Runtime view
 
