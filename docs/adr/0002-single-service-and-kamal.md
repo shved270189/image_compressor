@@ -22,7 +22,7 @@ The skeleton exposes `GET /api/health`, returning status 200 with `{"status":"ok
 
 HTTP validation belongs at the FastAPI boundary. Use Pydantic input validation and standard FastAPI HTTP errors. Keep image transformation functions independent of HTTP request and response objects. Define the actual upload and compression contract in the feature specification.
 
-React components use local state, native accessible form controls and Tailwind utilities. Use Tailwind's default tokens initially and keep any application theme tokens in the frontend's single CSS entry point. Do not add a component library, global state store or duplicate styling system to the skeleton.
+React components use local state, native accessible form controls and Tailwind utilities. The page and form must have a distinctive, modern visual design with deliberate typography, palette, spacing and a clear primary action. Keep the theme tokens in the frontend's single CSS entry point. Animate page entry, control feedback, image selection, processing state and result reveal using CSS transitions and keyframes first. Motion must not delay interaction, shift the layout or suggest fabricated progress. Respect prefers-reduced-motion, keyboard navigation and visible focus. Review the complete experience on mobile and desktop before accepting the UI. A single ordinary form describes the workflow, not a plain visual treatment. Do not add a component library, global state store or duplicate styling system to the skeleton. See the visual requirements in the product brief.
 
 ## Consequences
 

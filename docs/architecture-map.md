@@ -2,7 +2,7 @@
 status: current
 mode: greenfield-bootstrap
 updated_at: "2026-09-05"
-reflects_commit: "1cd6142"
+reflects_commit: "5e334ab"
 language: "Python 3.14 + TypeScript"
 build_cmd: "npm --prefix frontend run build"
 test_cmd: "uv run pytest"
@@ -13,7 +13,7 @@ frontend: "React + Vite + TypeScript + Tailwind"
 
 # Architecture map — image-compressor
 
-This is the approved target foundation, not a description of running code. At the reflected commit the repository contains the product brief and ignore rules only. The machine commands above are the decided scaffold contract; they have not run against an application yet. Refresh this map after scaffold materializes the skeleton.
+This is the approved target foundation, not a description of running code. At the reflected commit the repository contains the product brief, architecture documents and scaffold tasks; no application source exists. The machine commands above are the decided scaffold contract; they have not run against an application yet. Refresh this map after scaffold materializes the skeleton.
 
 ## Stack
 
@@ -79,9 +79,10 @@ No persistent datastore or migration task applies — `docs/adr/0003-transient-i
 ## Frontend / UI foundation
 
 - **Component library / shared primitives:** no existing components and no third-party kit. Start with native accessible controls in the planned React page. Extract shared components only when actual reuse requires them — `docs/adr/0002-single-service-and-kamal.md:25`.
-- **Styling / design tokens:** Tailwind through its Vite plugin. Reuse default Tailwind tokens initially; keep future application theme tokens in one planned `frontend/src/index.css`. There is no existing custom palette or typography system to copy — `docs/adr/0001-stack-and-development-tools.md:14` and `docs/adr/0002-single-service-and-kamal.md:25`.
+- **Styling / design tokens:** Tailwind through its Vite plugin. Create a distinctive modern composition with deliberate typography, palette, spacing and a clear primary action; the form remains the focus. Keep theme tokens in one planned `frontend/src/index.css`. No existing visual system is available to copy — `docs/adr/0001-stack-and-development-tools.md:14`, `docs/adr/0002-single-service-and-kamal.md:25` and `docs/idea-brief.md:47`.
 - **State / data fetching:** React local state and fetch. No global state or server-cache library — `docs/adr/0002-single-service-and-kamal.md:14` and `docs/adr/0002-single-service-and-kamal.md:25`.
 - **Closest UI precedent:** none yet. Scaffold creates the baseline `frontend/src/App.tsx` shell. The feature later adds the agreed single form; do not invent another workflow — `docs/idea-brief.md:41`.
+- **Motion and usability acceptance:** animate page entry, controls, image selection, processing and result reveal with CSS transitions and keyframes first. Keep interaction immediate, layout stable and progress truthful. Provide a reduced-motion experience, keyboard access, visible focus, readable contrast and clear errors. Visually review the full image-to-result flow on mobile and desktop before accepting the feature UI — `docs/idea-brief.md:49`, `docs/idea-brief.md:51` and `docs/adr/0002-single-service-and-kamal.md:25`.
 
 ## Where things live / closest precedents
 
@@ -125,11 +126,11 @@ Kamal runs through `bundle exec kamal`. Its future configuration uses `proxy.app
 
 - Product scope: one image and one form; no batch processing, history, presets, cropping or stretching — `docs/idea-brief.md:28`.
 - Width, height and file-size limits are independently optional. Preserve aspect ratio; dimensions may decrease to satisfy file size — `docs/idea-brief.md:41` and `docs/idea-brief.md:43`.
-- Formats, input limits, minimum quality and dimensions, unattainable targets and interrupted transfers need feature specification before processing code is written — `docs/idea-brief.md:49` and `docs/adr/0003-transient-image-processing.md:17`.
+- Formats, input limits, minimum quality and dimensions, unattainable targets and interrupted transfers need feature specification before processing code is written — `docs/idea-brief.md:55` and `docs/adr/0003-transient-image-processing.md:17`.
 - Build, test and runtime behavior remain unverified until scaffold. Exact framework and tool patch versions are resolved and locked there. No existing implementation debt has been identified because no source exists — `docs/adr/0001-stack-and-development-tools.md:15`.
 
 ## Reconciliation with the authored architecture doc
 
-No authored architecture document, root CLAUDE.md or pre-existing ADR was present. The existing Ukrainian [idea brief](idea-brief.md) remains unchanged. This map records the owner's approved foundation and later corrections: mise for tools, Bundler for Kamal, `mise run setup` for all dependency installs, and `mise run dev` for both servers.
+No authored architecture document, root CLAUDE.md or pre-existing ADR was present at the initial survey. The Ukrainian [idea brief](idea-brief.md) now includes the owner's visual design, animation and usability requirements. This map reconciles those requirements with the approved foundation: mise for tools, Bundler for Kamal, `mise run setup` for all dependency installs, and `mise run dev` for both servers.
 
-The root repository had no commits. Commit `1cd6142` records the unchanged brief and ignore rules and supplies the truthful baseline for `reflects_commit`. The subsequent survey commit contains only this map, its three ADRs and the scaffold tasks. `_scaffold` has no feature size or pipeline route; neither applies to this repository-level stage.
+The root repository originally had no commits. Commit `1cd6142` records the initial brief and ignore rules; `5e334ab` establishes the architecture foundation used as the baseline for this update. `_scaffold` has no feature size or pipeline route; neither applies to this repository-level stage.
