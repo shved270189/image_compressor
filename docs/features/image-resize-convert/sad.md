@@ -249,13 +249,13 @@ Feature implementation uses existing tests before introducing new test files or 
 
 ## 12. Glossary
 
-<!-- 🎯 Why: ⭐ the DOMAIN GLOSSARY that ends arguments a year later («checkpoint — weekly or
-     biweekly? quarter — calendar or fiscal?»).
-     📋 Write: a term / meaning table. Business + technical terms mixed.
-     📌 e.g. «Lesson | a unit inside a course made of blocks (text, video)». -->
+Canonical terms are copied from [CONTEXT.md](./CONTEXT.md).
 
 | Term | Meaning |
 |---|---|
-| <e.g. domain object A> | <its meaning in this domain> |
-| <e.g. domain object B> | <its meaning> |
-| <e.g. domain invariant name> | <the rule, in plain language> |
+| Власник картинки | The person processing their selected image. NOT an application account or permission role. |
+| Оригінал | The image file selected for the current operation. NOT a file overwritten by processing. |
+| Результат | The processed file ready to download for the current operation. NOT the original or a persistent server file. |
+| Максимальні розміри | Independently optional upper width and height bounds in pixels. NOT exact dimensions, cropping or stretching. |
+| Preview | An optional frontend-only representation of the selected original above the form when the browser can display it. NOT the processed result or a server-generated image. |
+
