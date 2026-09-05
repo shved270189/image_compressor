@@ -189,17 +189,16 @@ The server must enforce limits even when form controls are bypassed. Multipart s
 
 ## 9. Architecture decisions
 
-<!-- 🎯 Why: the REVERSE INDEX onto the adr/ folder. `ls adr/` gives the files; §9 gives the
-     semantics — why they exist, which SAD section they attach to, what status.
-     📋 Write: a 4-column table, one row per ADR. Mixed status is fine.
-     📌 e.g. «0001 | Store content as a table of typed blocks | Accepted | §4». -->
-
 | # | Title | Status | Section |
 |---|---|---|---|
-| <NNNN> | <imperative — e.g. "Use a sliding-window counter for rate limiting"> | Accepted | §<N> |
-| <NNNN> | <imperative — e.g. "Co-locate the worker in the API process"> | Accepted | §<N> |
+| [0001](./adr/0001-extend-web-frontend-and-backend-service.md) | Extend the web frontend and backend service | Accepted | §4, §5 |
+| [0002](./adr/0002-load-heic-through-pillow-plugin.md) | Load HEIC through the Pillow plugin | Accepted | §4, §7 |
+| [0003](./adr/0003-preserve-compatible-color-profiles.md) | Preserve compatible color profiles | Accepted | §4, §6 |
+| [0004](./adr/0004-return-results-within-the-current-operation.md) | Return results within the current operation | Accepted | §4, §6, §8 |
 
-ADR files live under `docs/features/<slug>/adr/NNNN-<title>.md`.
+The four records are the complete feature ADR set. Root [ADR 0001](../../adr/0001-stack-and-development-tools.md), [ADR 0002](../../adr/0002-single-service-and-kamal.md) and [ADR 0003](../../adr/0003-transient-image-processing.md) remain authoritative for stack, local development, SPA delivery, module conventions and absence of persistent storage.
+
+The owner explicitly chose four records rather than splitting the cohesive request/download lifecycle solely to reach the M-size count guideline. Surface selection records the inherited downstream contract without fabricating an alternative that the foundation already excludes. HEIC integration, color policy and lifecycle decisions record their actual choices and consequences.
 
 ## 10. Quality requirements
 
