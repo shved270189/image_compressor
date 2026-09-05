@@ -152,25 +152,18 @@ Download URL release must not be driven by form reset or assumed to follow a dis
 
 ## 7. Deployment view
 
-<!-- 🎯 Why: the TOPOLOGY DevOps must know without reading the deploy charts — how many replicas,
-     where the background worker lives, AT WHAT NUMBERS we scale.
-     📋 Write: 2–3 sentences on topology + monitoring + concrete threshold numbers.
-     📌 e.g. «500 authors → partition by quarter» (not «we'll think about scale later»).
-     🎯 N/A allowed for XS/S that reuses an existing deployment unit with no change.
-     Deployment-diagram scaffold → templates/deployment.md. -->
+Reuse root `mise run dev` for the two development servers and the existing single Docker application image for the local built application. The browser is a client of that image, not another production service. The runtime stays non-root, with built frontend assets and Python dependencies; no Node.js, Ruby or development tools are added to it.
 
-<Topology in 2–3 sentences. Where it runs, replicas, scaling thresholds.>
+Pillow-heif introduces native decoder packaging to verify on the local macOS environment and Linux application image. Published CPython 3.14 wheels exist for macOS and Linux on arm64 and x86_64 in [pillow-heif 1.6.0](https://pypi.org/project/pillow-heif/1.6.0/); package availability is not proof of the required runtime behavior. Resolve and lock implementation dependencies with the existing uv workflow only when implementing.
 
-**Monitoring:**
-- <Metrics — e.g. `<metric_name>`>
-- <Alerts — e.g. «worker lag > 10 min → page on-call»>
-- <Tracing — e.g. spans on the request boundary>
+| Concern | Decision |
+|---|---|
+| Health and logs | Preserve the existing health endpoint and stdout/stderr; do not log image content or identifying image metadata |
+| Metrics, alerts and tracing | No new collection; this local feature excludes analytics and timing measurements |
+| Scaling thresholds | N/A: no agreed throughput, replica or public-service availability target |
+| Public hosting | N/A: no Kamal deployment configuration, registry or infrastructure changes in this feature |
 
-**Scaling thresholds:**
-- <e.g. comfortable in one table up to N rows/year>
-- <e.g. partition by quarter above N rows/year>
-
-<!-- For XS/S with no deployment change: <!-- N/A: reuses existing deployment unit, no infra change --> -->
+Preserve built-asset smoke coverage and API 404 responses. Restart the backend after the first frontend build when it initially started without `frontend/dist`.
 
 ## 8. Crosscutting concepts
 
