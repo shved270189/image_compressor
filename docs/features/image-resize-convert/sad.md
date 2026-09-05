@@ -9,6 +9,8 @@ target_surfaces: [web-frontend, backend-service]
 
 # Software Architecture Document — image-resize-convert
 
+**Design review — 2026-09-06.** All twelve sections were approved through the medium-depth design walk. An independent clean-context critic reviewed the written SAD and four ADRs and returned `NO_CONTESTED_DECISIONS`. All three Mermaid blocks rendered successfully with `mmdc`; structural checks confirmed the section count, declared surfaces, Accepted ADRs, closed ADR index, local links and absence of template placeholders. All six NFR targets match the spec verbatim. This review covers architecture documents only; the runtime gates in §11 remain open.
+
 ## 1. Introduction and goals
 
 **Intent.** Give Власник картинки a local, single-page workflow to select an Оригінал, optionally inspect its local Preview, apply independently optional Максимальні розміри, choose JPEG, PNG or WebP, and receive one automatic download of the Результат followed by a clean form. The canonical requirements are [spec.md](./spec.md), including its automatic-download amendment, and [ux-flows.md](./ux-flows.md).
@@ -258,4 +260,3 @@ Canonical terms are copied from [CONTEXT.md](./CONTEXT.md).
 | Результат | The processed file ready to download for the current operation. NOT the original or a persistent server file. |
 | Максимальні розміри | Independently optional upper width and height bounds in pixels. NOT exact dimensions, cropping or stretching. |
 | Preview | An optional frontend-only representation of the selected original above the form when the browser can display it. NOT the processed result or a server-generated image. |
-
