@@ -1,2 +1,13 @@
 .claude/*.local.md
 .worktrees/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+frontend/node_modules/
+frontend/dist/
+.bundle/
+vendor/bundle/
+.env
+.env.*
+.DS_Store

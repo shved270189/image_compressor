@@ -1,8 +1,9 @@
 ---
 status: current
 mode: greenfield-bootstrap
+bootstrap_status: materialized
 updated_at: "2026-09-05"
-reflects_commit: "5e334ab"
+reflects_commit: "616dca8"
 language: "Python 3.14 + TypeScript"
 build_cmd: "npm --prefix frontend run build"
 test_cmd: "uv run pytest"
@@ -13,124 +14,106 @@ frontend: "React + Vite + TypeScript + Tailwind"
 
 # Architecture map — image-compressor
 
-This is the approved target foundation, not a description of running code. At the reflected commit the repository contains the product brief, architecture documents and scaffold tasks; no application source exists. The machine commands above are the decided scaffold contract; they have not run against an application yet. Refresh this map after scaffold materializes the skeleton.
+The foundation is materialized over baseline commit `616dca8`. This map includes the skeleton committed with this update. Build, boot, tests, lint, setup, reload, HMR and local container smoke passed on 2026-09-05. [Scaffold tasks](features/_scaffold/tasks.json) contain command evidence. Hosted GitHub Actions has not run; no remote is configured.
 
 ## Stack
 
-- Backend: Python 3.14, FastAPI, Uvicorn and Pillow. uv owns the root Python project and its development dependencies. Frontend: React, Vite, TypeScript and Tailwind with npm — `docs/adr/0001-stack-and-development-tools.md:13`.
-- Tool versions: root `mise.toml` selects Python, Node.js 24 LTS, uv and Ruby. Pin compatible patch versions at scaffold. Ruby is needed for deployment tooling; Kamal belongs in `Gemfile`, not mise's tool list — `docs/adr/0001-stack-and-development-tools.md:15`.
-- Build: `npm --prefix frontend run build` runs TypeScript checking followed by Vite. Test: `uv run pytest`. Lint: `uv run ruff check .` and `npm --prefix frontend run lint` — `docs/adr/0001-stack-and-development-tools.md:34`.
-- Setup: `mise run setup` installs all three ecosystems sequentially. Start: `mise run dev` launches both development servers in one terminal. Commands assume the repository root. The owner invokes setup; commands have no `mise exec` wrappers — `docs/adr/0001-stack-and-development-tools.md:21`.
+- Python 3.14, FastAPI, Uvicorn and Pillow. uv owns the root project and default development dependencies — `pyproject.toml:1` and `uv.lock`.
+- React, Vite, TypeScript and Tailwind use npm — `frontend/package.json:1` and `frontend/package-lock.json`. TypeScript stays on 6.0.x to satisfy typescript-eslint peer requirements.
+- mise pins Python 3.14.6, Node.js 24.18.1, uv 0.12.9 and Ruby 4.0.5 — `mise.toml:1`. `UV_PYTHON` points to mise's interpreter; uv owns `.venv` — `mise.toml:7`.
+- Kamal is declared in `Gemfile:3` and locked to 2.12.0. Ruby and Bundler are deployment tools, outside the application runtime.
+- Build, test and lint commands in frontmatter ran successfully. Build the frontend before pytest; the smoke test requires emitted assets — `tests/test_smoke.py:21`.
 
 ## C4 — system as it is
 
-The diagrams describe the target foundation. No application container or production deployment exists yet.
+The application image exists and runs locally. Image processing is future behavior. The public proxy and deployment below remain the target topology.
 
 ```mermaid
 C4Context
-    title Target system context - image-compressor
+    title Image compressor foundation
     Person(user, "Image owner", "Prepares one image for size and format requirements")
-    System(compressor, "image-compressor", "Single-page image preparation application")
-    Rel(user, compressor, "Uploads an image and downloads the result", "HTTPS")
+    System(compressor, "Image compressor", "Runnable shell; image processing is the next feature")
+    Rel(user, compressor, "Opens the application", "HTTP locally; HTTPS after deployment")
 ```
 
 ```mermaid
 C4Container
-    title Target production containers - image-compressor
+    title Application image and target deployment
     Person(user, "Image owner", "Uses the browser")
-    Container(ui, "Browser UI", "React and TypeScript", "Collects parameters and presents the result")
-    Container(proxy, "kamal-proxy", "Reverse proxy", "Routes traffic to the application")
-    Container(app, "Application", "FastAPI and Pillow", "Serves the built frontend and processes images")
+    Container(ui, "Browser UI", "React and TypeScript", "Renders the shell; future input and result form")
+    Container(proxy, "kamal-proxy", "Future reverse proxy", "Routes public traffic after deployment")
+    Container(app, "Application", "FastAPI and Pillow", "Serves health and built frontend; future image processing")
     Rel(user, ui, "Uses")
-    Rel(ui, proxy, "Requests assets and calls API", "HTTPS")
+    Rel(ui, proxy, "Requests assets and future API", "HTTPS")
     Rel(proxy, app, "Forwards requests", "HTTP port 8000")
 ```
 
-One application image contains backend code and built frontend assets. The browser UI is a logical client container, not a second deployed application service. Ruby and Kamal run on the deployment machine — `docs/adr/0002-single-service-and-kamal.md:29`.
+One image contains backend code and built frontend assets. The browser UI is a logical client, not a second deployed service. Local checks access the application directly without a proxy — `Dockerfile:17` and `docs/adr/0002-single-service-and-kamal.md:29`.
 
 ## Module inventory
 
-All application paths below are planned. Citation anchors refer to existing decision documents, not fabricated source files.
+| Module | Path | Wired at | Responsibility |
+|---|---|---|---|
+| Backend | `backend/` | `backend/main.py:5` | Health endpoint and built frontend serving |
+| Frontend | `frontend/` | `frontend/src/main.tsx:6` | React shell and baseline styling |
+| Development tooling | Repository root | `mise.toml:13` | Sequential setup and concurrent dev servers |
+| Container delivery | Repository root | `Dockerfile:17` | One non-root application image |
+| Verification | `tests/`, `.github/workflows/` | `tests/test_smoke.py:10`, `.github/workflows/ci.yml:1` | Shared in-process and live-container smoke scenarios |
 
-| Module | Path | Layers | Wired at | Responsibility |
-|---|---|---|---|---|
-| Backend | `backend/` | HTTP boundary; image functions added with the feature | Planned `backend/main.py`; ADR 0002 line 13 | Health endpoint, later upload validation and image transformations |
-| Frontend | `frontend/` | React page and local state | Planned `frontend/src/main.tsx`; ADR 0002 line 25 | One page, native controls, result presentation |
-| Development tooling | Repository root | mise tasks; uv, npm and Bundler manifests | Planned `mise.toml`; ADR 0001 line 21 | Reproducible setup and one-command startup |
-| Container delivery | Repository root | Image build and deployment tooling | Planned `Dockerfile`; ADR 0002 line 16 | Build one application image for Kamal |
+## Conventions
 
-## Conventions (cited — the rules a new feature must match)
-
-- **Module wiring / registration:** FastAPI entry point in `backend/main.py`; HTTP handlers call ordinary image functions. Do not scaffold unused processing abstractions — `docs/adr/0002-single-service-and-kamal.md:13`.
-- **Error handling:** Pydantic validation at the HTTP boundary and standard FastAPI HTTP errors. Define feature-specific responses in the feature contract — `docs/adr/0002-single-service-and-kamal.md:23`.
-- **IDs, persistence and migrations:** no persistent image IDs, database, object store or migration tool. `migration_tool: ""` means not applicable for this foundation — `docs/adr/0003-transient-image-processing.md:16`.
-- **Tests:** pytest with HTTPX, Ruff, TypeScript and ESLint. The first runnable check is the skeleton smoke test, not a compression feature test — `docs/adr/0001-stack-and-development-tools.md:34`.
-- **Inter-module communication and UI:** relative `/api` calls via fetch; Vite proxies during development. React local state and Tailwind provide the UI foundation — `docs/adr/0002-single-service-and-kamal.md:14` and `docs/adr/0002-single-service-and-kamal.md:25`.
+- **Module wiring:** FastAPI entry point and health handler — `backend/main.py:5`. Future handlers call ordinary functions in `backend/images.py`; create that file when image behavior exists — `docs/adr/0002-single-service-and-kamal.md:13`.
+- **HTTP errors:** use Pydantic validation and standard FastAPI errors at the HTTP boundary. Define processing responses in the feature contract — `docs/adr/0002-single-service-and-kamal.md:23`.
+- **Frontend serving:** `app.frontend` serves the build with fallback disabled, preserving API 404s — `backend/main.py:13`. Registration is conditional on the build directory so the API boots before a build exists. Restart the backend after the first build.
+- **Tests:** pytest and HTTPX check health, built HTML, emitted JS/CSS and unknown API paths with JSON and HTML Accept headers — `tests/test_smoke.py:10`. `SMOKE_BASE_URL` runs the same scenarios against a live container. Ruff, TypeScript and ESLint provide static checks.
+- **UI communication:** future browser requests use relative `/api` fetch calls. Vite proxies `/api` to the backend — `frontend/vite.config.ts:8`. Use React local state; no global store, server-cache library or client router.
 
 ## Datastores
 
-| Store | Engine | Accessed via | Notes |
-|---|---|---|---|
-| Request-scoped upload | Memory or spooled temporary file | FastAPI `UploadFile` | Close on completion, errors and interruption |
-| Current result | Process memory | Pillow output and HTTP response | Release after the response lifecycle; no later retrieval |
+No persistent datastore, image IDs, object store, queue or migration tool exists. `migration_tool: ""` means N/A, not a missing command — `docs/adr/0003-transient-image-processing.md:16`.
 
-No persistent datastore or migration task applies — `docs/adr/0003-transient-image-processing.md:14`.
+Future uploads use request-scoped FastAPI `UploadFile` storage. Future encoded results remain in memory until the response completes. Specify resource limits and cleanup for completion, errors and interruption before implementing processing — `docs/adr/0003-transient-image-processing.md:13`.
 
 ## Frontend / UI foundation
 
-- **Component library / shared primitives:** no existing components and no third-party kit. Start with native accessible controls in the planned React page. Extract shared components only when actual reuse requires them — `docs/adr/0002-single-service-and-kamal.md:25`.
-- **Styling / design tokens:** Tailwind through its Vite plugin. Create a distinctive modern composition with deliberate typography, palette, spacing and a clear primary action; the form remains the focus. Keep theme tokens in one planned `frontend/src/index.css`. No existing visual system is available to copy — `docs/adr/0001-stack-and-development-tools.md:14`, `docs/adr/0002-single-service-and-kamal.md:25` and `docs/idea-brief.md:47`.
-- **State / data fetching:** React local state and fetch. No global state or server-cache library — `docs/adr/0002-single-service-and-kamal.md:14` and `docs/adr/0002-single-service-and-kamal.md:25`.
-- **Closest UI precedent:** none yet. Scaffold creates the baseline `frontend/src/App.tsx` shell. The feature later adds the agreed single form; do not invent another workflow — `docs/idea-brief.md:41`.
-- **Motion and usability acceptance:** animate page entry, controls, image selection, processing and result reveal with CSS transitions and keyframes first. Keep interaction immediate, layout stable and progress truthful. Provide a reduced-motion experience, keyboard access, visible focus, readable contrast and clear errors. Visually review the full image-to-result flow on mobile and desktop before accepting the feature UI — `docs/idea-brief.md:49`, `docs/idea-brief.md:51` and `docs/adr/0002-single-service-and-kamal.md:25`.
+- **Closest precedent:** `frontend/src/App.tsx:1` is a shell, not the compression form. Add the agreed single form with independently optional limits in the feature.
+- **Components:** native accessible controls and React local state. Extract shared components only for actual reuse; no third-party component kit — `docs/adr/0002-single-service-and-kamal.md:25`.
+- **Styling:** Tailwind Vite plugin — `frontend/vite.config.ts:6`. Typography, warm background, dark text and green accent live in one token entry point — `frontend/src/index.css:3`. The feature must retain deliberate spacing and a clear primary action, with the form as the focus — `docs/idea-brief.md:47`.
+- **Motion:** the shell has CSS entry motion gated by reduced-motion preference — `frontend/src/index.css:21`. Future controls, selection, processing and results need immediate interaction, stable layout, truthful progress, keyboard access, visible focus, readable contrast and clear errors — `docs/idea-brief.md:49` and `docs/adr/0002-single-service-and-kamal.md:25`.
+- **Acceptance:** the shell was rendered in Chrome and HMR verified. Review the complete image-to-result flow on mobile and desktop when the feature exists; scaffold does not satisfy that future acceptance gate.
 
-## Where things live / closest precedents
+## Root development commands
 
-There are no implemented feature precedents. The [scaffold tasks](features/_scaffold/tasks.json) establish the first runnable baseline.
+The owner runs `mise run setup` after installing the pinned tools. Setup sequentially runs `uv sync --locked`, `npm --prefix frontend ci --include=dev` and `bundle install` — `mise.toml:13`. Both successful runs in a disposable repository copy preserved all lockfile hashes. An invalid uv.lock stopped execution before npm or Bundler.
 
-- Add the health endpoint at the planned FastAPI entry point. `GET /api/health` returns 200 and `{"status":"ok"}`. Unknown `/api` paths return 404 — `docs/adr/0002-single-service-and-kamal.md:21`.
-- Add the future image transformation functions in `backend/images.py`, independent of HTTP objects. Do not create that module before it has behavior — `docs/adr/0002-single-service-and-kamal.md:13` and `docs/adr/0002-single-service-and-kamal.md:23`.
-- Compose the future form in the React page using the UI foundation above. Preserve the brief's independently optional limits — `docs/idea-brief.md:43`.
+`mise run dev` starts both dependency tasks with two task slots — `mise.toml:10` and `mise.toml:20`:
 
-### Root development commands
-
-The following task definitions are the approved target for `mise.toml`. They are not installed by survey. S1 and S2 generate the manifests and lockfiles before setup can run.
-
-```toml
-[tasks.setup]
-run = [
-  "uv sync --locked",
-  "npm --prefix frontend ci --include=dev",
-  "bundle install",
-]
-
-[tasks.dev]
-depends = ["dev:backend", "dev:frontend"]
-
-[tasks."dev:backend"]
-run = "uv run uvicorn backend.main:app --reload --reload-dir backend --port 8000"
-
-[tasks."dev:frontend"]
-run = "npm --prefix frontend run dev -- --port 5173 --strictPort"
+```sh
+uv run uvicorn backend.main:app --reload --reload-dir backend --port 8000
+npm --prefix frontend run dev -- --port 5173 --strictPort
 ```
 
-Setup stops on the first error. Dev runs both servers concurrently, with reload and separate log prefixes. Verify startup from the root and Ctrl+C cleanup, including reload children. `http://localhost:5173` is the development page; `/api` proxies to `http://127.0.0.1:8000` — `docs/adr/0001-stack-and-development-tools.md:21` and `docs/adr/0002-single-service-and-kamal.md:14`.
+Open <http://localhost:5173>. Vite proxies `/api` to <http://127.0.0.1:8000>. Root startup, prefixed logs, backend reload and browser HMR passed. One Ctrl+C stopped both servers and reload children and released ports 8000 and 5173. mise reports an interrupted task as an error; process cleanup still passed. Dev never invokes setup. Commands use no `mise exec` wrappers.
 
-### Deployment foundation
+## Container and CI
 
-Scaffold adds the multi-stage Dockerfile and a container smoke check. The final image runs Uvicorn without reload on port 8000 and serves the built frontend. Use locked application dependencies and exclude local environments, secrets and development tools from the runtime image — `docs/adr/0002-single-service-and-kamal.md:16`.
+`Dockerfile:1` builds the frontend with Node.js 24 and installs locked Python runtime dependencies in a separate stage. `Dockerfile:17` runs Python 3.14 as UID 10001, serves built assets and starts Uvicorn on port 8000 without reload. `.dockerignore:1` allowlists build inputs and excludes local dependencies and environment files.
 
-Kamal runs through `bundle exec kamal`. Its future configuration uses `proxy.app_port: 8000` and healthcheck `/api/health`. Deployment infrastructure values and live rollout are outside survey and scaffold. GitHub Actions checks build, tests, lint and the image without deploying — `docs/adr/0002-single-service-and-kamal.md:17` and `docs/adr/0002-single-service-and-kamal.md:31`.
+`docker build -t image-compressor:smoke .` passed on Linux arm64. Live-container `SMOKE_BASE_URL=http://127.0.0.1:8000 uv run pytest` passed. Runtime inspection confirmed Node.js, npm, Ruby, uv, Ruff and pytest are absent.
 
-## Constraints & known tech-debt
+`.github/workflows/ci.yml:1` uses mise and locked dependencies for build, pytest, Ruff, ESLint, Bundler checks and the same container smoke scenarios. actionlint passed. Hosted execution is unverified; no deployment runs from CI.
 
-- Product scope: one image and one form; no batch processing, history, presets, cropping or stretching — `docs/idea-brief.md:28`.
+Kamal runs through `bundle exec kamal`. A future deployment configuration uses `proxy.app_port: 8000` and health path `/api/health`. Server addresses, domain, registry and credentials require a separate deployment task — `docs/adr/0002-single-service-and-kamal.md:17`.
+
+## Constraints and next feature
+
+- One image and one form; no batch processing, history, presets, cropping or stretching — `docs/idea-brief.md:28`.
 - Width, height and file-size limits are independently optional. Preserve aspect ratio; dimensions may decrease to satisfy file size — `docs/idea-brief.md:41` and `docs/idea-brief.md:43`.
-- Formats, input limits, minimum quality and dimensions, unattainable targets and interrupted transfers need feature specification before processing code is written — `docs/idea-brief.md:55` and `docs/adr/0003-transient-image-processing.md:17`.
-- Build, test and runtime behavior remain unverified until scaffold. Exact framework and tool patch versions are resolved and locked there. No existing implementation debt has been identified because no source exists — `docs/adr/0001-stack-and-development-tools.md:15`.
+- Formats, upload byte and pixel limits, minimum quality and dimensions, unattainable targets and interruption behavior need feature specification — `docs/idea-brief.md:55` and `docs/adr/0003-transient-image-processing.md:17`.
+- Hosted CI, public deployment and complete feature UI remain unverified. Local skeleton checks are green; migrations are explicitly N/A.
 
-## Reconciliation with the authored architecture doc
+## Reconciliation
 
-No authored architecture document, root CLAUDE.md or pre-existing ADR was present at the initial survey. The Ukrainian [idea brief](idea-brief.md) now includes the owner's visual design, animation and usability requirements. This map reconciles those requirements with the approved foundation: mise for tools, Bundler for Kamal, `mise run setup` for all dependency installs, and `mise run dev` for both servers.
+The [idea brief](idea-brief.md) and accepted [ADRs](adr/) remain authoritative for product and foundation decisions. `README.md` documents the runnable commands; `CLAUDE.md` records project conventions. The local SDD settings remain unchanged.
 
-The root repository originally had no commits. Commit `1cd6142` records the initial brief and ignore rules; `5e334ab` establishes the architecture foundation used as the baseline for this update. `_scaffold` has no feature size or pipeline route; neither applies to this repository-level stage.
+Commit `1cd6142` records the brief; `5e334ab` establishes the foundation; `616dca8` adds visual requirements. This scaffold materializes that foundation. `_scaffold` is a repository stage with no feature size or pipeline route.

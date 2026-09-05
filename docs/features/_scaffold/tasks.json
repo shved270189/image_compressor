@@ -17,6 +17,15 @@
         "backend/__init__.py",
         "backend/main.py",
         ".gitignore"
+      ],
+      "status": "done",
+      "evidence": [
+        "mise tools: Python 3.14.6, Node.js 24.18.1, uv 0.12.9, Ruby 4.0.5.",
+        "uv lock; uv sync --locked; bundle install: PASS. Lockfiles generated.",
+        "Before frontend build: health returned 200 with {\"status\":\"ok\"}; unknown API returned 404.",
+        "bundle check: PASS; bundle exec kamal version: 2.12.0.",
+        "Migrations: N/A, no datastore (ADR 0003).",
+        "Final backend copied without frontend/dist: health 200, unknown API and root 404; PASS."
       ]
     },
     {
@@ -38,6 +47,13 @@
         "frontend/eslint.config.js",
         "backend/main.py",
         "mise.toml"
+      ],
+      "status": "done",
+      "evidence": [
+        "npm --prefix frontend install: PASS, lockfile generated; TypeScript 6.0.3 satisfies typescript-eslint peer requirements.",
+        "npm --prefix frontend run build: PASS; TypeScript check and Vite build emitted HTML, JS and CSS.",
+        "npm --prefix frontend run lint: PASS.",
+        "mise tasks ls: setup, dev, dev:backend and dev:frontend present; jobs = 2."
       ]
     },
     {
@@ -51,6 +67,15 @@
         "tests/test_smoke.py",
         "pyproject.toml",
         "mise.toml"
+      ],
+      "status": "done",
+      "evidence": [
+        "uv run pytest: 1 passed; uv run ruff check .: PASS; npm --prefix frontend run lint: PASS; npm --prefix frontend run build: PASS.",
+        "mise run setup executed twice in a disposable repository copy: both PASS; SHA-256 of all three lockfiles unchanged.",
+        "Invalid uv.lock in the disposable copy: setup failed at uv sync; npm and Bundler were not invoked. Temporary copy removed.",
+        "mise run dev: page rendered in Chrome; direct and proxied health returned 200. Temporary App.tsx text appeared through HMR without navigation and was restored.",
+        "Touching backend/main.py restarted server PID 45585 as PID 45731. One Ctrl+C stopped reloader PID 45564 and children; IPv4/IPv6 ports 8000 and 5173 closed.",
+        "Migrations: N/A, no datastore."
       ]
     },
     {
@@ -65,6 +90,15 @@
         ".dockerignore",
         ".github/workflows/ci.yml",
         "tests/test_smoke.py"
+      ],
+      "status": "done",
+      "evidence": [
+        "docker build -t image-compressor:smoke .: PASS on local Linux arm64 engine.",
+        "docker run -d --rm --name image-compressor-smoke -p 127.0.0.1:8000:8000 image-compressor:smoke: PASS.",
+        "curl --fail --retry 20 --retry-all-errors --retry-delay 1 http://127.0.0.1:8000/api/health: PASS; retry handles the initial empty response before Uvicorn is ready.",
+        "SMOKE_BASE_URL=http://127.0.0.1:8000 uv run pytest: 1 passed; health, HTML, JS, CSS and API 404 scenarios.",
+        "Runtime check: UID 10001; node, npm, ruby, uv, ruff and pytest absent. Container stopped and removed.",
+        "actionlint .github/workflows/ci.yml: PASS. Hosted GitHub Actions has not run; no remote is configured."
       ]
     },
     {
@@ -78,6 +112,13 @@
         "CLAUDE.md",
         "README.md",
         "docs/architecture-map.md"
+      ],
+      "status": "done",
+      "evidence": [
+        "README.md documents setup, dev, checks and container commands; CLAUDE.md records project conventions.",
+        "Architecture map reconciled to implemented paths and executed machine commands.",
+        "Brief, ADRs and local SDD settings preserved. Compression and deployment infrastructure remain later work.",
+        "Structural review: every files_hint output exists; map machine keys match executed checks; source anchors exist; git diff --check and actionlint pass."
       ]
     }
   ]
