@@ -16,10 +16,10 @@ The owner can use a modern local single-page form to resize, convert and compres
 | # | Step | Source | Size | Status |
 |---|---|---|:---:|---|
 | 1 | Application foundation — [`_scaffold`](features/_scaffold/) | [architecture-map.md §Module inventory](architecture-map.md#module-inventory) | M | shipped |
-| 2 | Resize and convert an image — `image-resize-convert` | [idea-brief.md §7. Recommendation](idea-brief.md#7-recommendation) | M | idea |
+| 2 | Resize and convert an image — [`image-resize-convert`](features/image-resize-convert/) | [spec.md §1. Context](features/image-resize-convert/spec.md#1-context) | M | spec'd |
 | 3 | Compress an image to a file-size limit — `image-size-limit` | [idea-brief.md §2. Problem](idea-brief.md#2-problem), [§7. Recommendation](idea-brief.md#7-recommendation) | S | idea |
 
-**Resize and convert an image** delivers the complete selection-to-download flow, independently optional maximum width and height, aspect-ratio preservation, optional format conversion and actual result dimensions and file size. It includes the responsive visual design, accessible controls, clear errors and motion required by the brief, with mobile, desktop and reduced-motion verification. Upload limits and cleanup apply from this first processing increment. File-size targeting belongs to the following increment.
+**Resize and convert an image** delivers the complete selection-to-download flow, independently optional maximum width and height, aspect-ratio preservation, format selection with JPEG as the default and actual result dimensions and file size. An optional frontend-only preview appears above the form when the browser can display the selected file; it never uploads the file or blocks processing when unavailable. It includes the responsive visual design, accessible controls, clear errors and motion required by the brief, with mobile, desktop and reduced-motion verification. Upload limits and cleanup apply from this first processing increment. File-size targeting belongs to the following increment. The [feature specification](features/image-resize-convert/spec.md) records the agreed behavior.
 
 **Compress an image to a file-size limit** extends the same form and processing path with an independently optional MB limit, automatic dimension reduction when needed and clear handling of unattainable limits. Omitting any constraint leaves that constraint unset; all three may be omitted.
 
@@ -41,11 +41,10 @@ None. Fog count: 0. Remaining questions are precise enough to record as open dec
 
 | # | Question | Type | Owner | Blocks |
 |---|---|:---:|:---:|:---:|
-| D1 | Which input and output formats are required, and what maximum upload byte count and decoded pixel count must be supported? See [idea-brief.md §8. Open questions](idea-brief.md#8-open-questions) and [ADR 0003 §Decision](adr/0003-transient-image-processing.md#decision). | grilling | human | 2 |
 | D2 | What minimum quality and dimensions are acceptable, and what should the user receive when the requested file-size limit cannot be met? See [idea-brief.md §6. Risks](idea-brief.md#6-risks) and [§8. Open questions](idea-brief.md#8-open-questions). | grilling | human | 3 |
 | D3 | How will the request lifecycle enforce resource limits and release upload handles, decoded images and result buffers after success, errors and interrupted transfer? Verify the existing stack's lifecycle behavior before implementing processing, following [ADR 0003 §Decision](adr/0003-transient-image-processing.md#decision). | research | agent | 2 |
 
-These decisions close during the relevant feature specification, before processing implementation. Feature directories for the two idea steps do not exist yet; specifying them will create the directories and update their statuses.
+D2 closes during the file-size-limit specification. D3 requires design verification before planning processing implementation, followed by lifecycle tests during implementation. The resize-and-convert specification is recorded; the file-size-limit feature remains an idea.
 
 ## Decisions so far
 
@@ -54,6 +53,8 @@ These decisions close during the relevant feature specification, before processi
 - Preserve aspect ratio and treat width, height and file size as independently optional constraints — [idea-brief.md §7. Recommendation](idea-brief.md#7-recommendation).
 - Keep images request-scoped without persistent storage — [ADR 0003 §Decision](adr/0003-transient-image-processing.md#decision).
 - Limit this roadmap to local use — [Out of scope](#out-of-scope), as selected by the owner during roadmap review.
+
+Input/output formats and upload limits (D1) are resolved in [spec.md §5. Acceptance criteria](features/image-resize-convert/spec.md#5-acceptance-criteria) and [§6. Non-functional requirements](features/image-resize-convert/spec.md#6-non-functional-requirements).
 
 ## Dependency graph
 
