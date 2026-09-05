@@ -202,29 +202,37 @@ The owner explicitly chose four records rather than splitting the cohesive reque
 
 ## 10. Quality requirements
 
-<!-- 🎯 Why: the QUALITY TREE — take a goal from §1 and break it into concrete leaves: tests,
-     metrics, configs, drills. ⭐ Without §10, §1 is a manifesto. With §10 each declaration maps
-     to something PROVABLE.
-     📋 Write: per §1 goal — When / Then / How-verify. Numbers from spec §6 NFR VERBATIM (don't
-     round ≤250ms to ≤300ms — that's a critic F6 hit).
-     📌 e.g. «p95 ≤ 500 ms on a block update, verified by a 100 req/s load test». -->
+Targets below come from [spec.md §6](./spec.md#6-non-functional-requirements). Transformation examples come from §5 ACs and are not new performance targets.
 
-Each top-3 goal from §1 expanded into a full scenario:
+**QG-1. Correct transformations and bounded input.**
 
-**QG-1. <quality attribute>**
-- **When:** <trigger condition>
-- **Then:** <expected behaviour with numbers from spec §6 NFR>
-- **How verify:** <test / chaos drill / load test / metric>
+- **When:** A file and supplied transformation parameters reach the processing boundary, including requests bypassing the form.
+- **Then:** Input limits are “At most 20,000,000 bytes and 40,000,000 decoded pixels of the selected static image; equality allowed”. Reject empty, corrupted, unsupported and animated content under the HEIC primary-image rule. Produce the chosen supported output with the specified orientation, bounds, transparency and metadata behavior.
+- **How verify:** Existing pytest/HTTPX tools exercise missing parameters, dimensions-only JPEG fallback, invalid bounds and output choices, exact-limit and over-limit inputs, disguised content and failures before full decoding. Verify all 12 supported input/output combinations, designated HEIC primary image, HDR-to-8-bit behavior, the AC-04 dimensions and AC-05 half-up example, no enlargement, same-format normalization, white JPEG alpha compositing, retained PNG/WebP alpha and compatible color interpretation after metadata removal.
 
-**QG-2. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+**QG-2. Local Preview and transient private resources.**
 
-**QG-3. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+- **When:** Selection, parameter editing, processing, response transfer, failure, interruption or browser download handoff occurs.
+- **Then:** Preview locality is “Zero file-upload requests caused by selection, parameter editing or Preview preparation”. Transient resources are “Zero retained upload handles, decoded images or result buffers after their operation lifecycle; zero image content in logs”. Allocator-reserved memory is not a retained image.
+- **How verify:** Observe browser requests during selection/editing and optional Preview failure. Exercise parser interruption, decoder failure, transfer failure and normal completion with explicit handle/reference ownership checks. Inspect logs. Prove that form reset releases Preview resources without breaking the initiated download, and that download resources are released after handoff without creating another download capability. Reload must restore neither file nor result.
+
+**QG-3. Accessible interaction and recovery.**
+
+- **When:** Власник картинки completes, retries or repeats the flow in the browser.
+- **Then:** Form concurrency is “At most one submitted processing operation from the current form; file selection and all transformation parameter controls disabled while processing”. Accessibility requires “Every interactive control is keyboard-usable with visible focus; every label, error and action passes the project owner's manual readable-contrast review; with reduced motion, zero decorative animations and zero loss of functionality”. Responsive UI requires “Complete flow at viewport widths 360 and 1280 CSS pixels with no horizontal page overflow”.
+- **How verify:** Exercise the complete keyboard flow, owner contrast acceptance and reduced-motion review at both widths. Verify disabled controls and duplicate-submit suppression, silent unavailable Preview, conditional JPEG warning and general HEIC notice, one complete download per success, a clean form with no result controls, same-file reselection, consecutive conversions, retained input after recoverable failure and ignored stale completions. The owner selected desktop Chrome, Safari and Firefox, iPhone Safari and Android Chrome for browser verification. Viewport emulation alone does not prove mobile download behavior.
+
+**AC traceability.**
+
+| Criteria | Architecture | Verification focus |
+|---|---|---|
+| AC-01–AC-03 | §3, §5, §6 Selection | Local eligibility, optional oriented Preview, reset and stale selection |
+| AC-04–AC-06 | §4, §6 Validation and transformation | Exact geometry, rounding, no enlargement, normalized ineffective requests |
+| AC-07–AC-10 | §4, ADR 0002–0003 | Format matrix, transparency, orientation, metadata and HEIC notices/primary/HDR |
+| AC-11–AC-12 | §3, §6, §8 | Bypassed UI, invalid parameters, actual content and exact input limits |
+| AC-13–AC-16 | §6, §8, ADR 0004 | One download, reset, no lookup, retry and all cleanup paths |
+
+Feature implementation uses existing tests before introducing new test files or tools. No new browser test infrastructure is authorized by this SAD. Preserve the existing smoke test. After code changes run `npm --prefix frontend run build` before `uv run pytest`, then `uv run ruff check .` and `npm --prefix frontend run lint`. Run the shared smoke test against the application image with `SMOKE_BASE_URL`. These implementation checks are not claimed as executed by this documentation stage.
 
 ## 11. Risks and technical debt
 
