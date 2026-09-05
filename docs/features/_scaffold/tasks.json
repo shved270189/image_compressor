@@ -1,0 +1,84 @@
+{
+  "slug": "_scaffold",
+  "tasks": [
+    {
+      "id": "S1",
+      "title": "Establish mise, Bundler and the FastAPI entry point",
+      "layer": "scaffold",
+      "deps": [],
+      "acs": [],
+      "dod": "Pin compatible Python 3.14, Node.js 24 LTS, uv and Ruby versions in root mise.toml. uv uses mise's Python and owns the root project and .venv. Create and lock FastAPI, Uvicorn and Pillow runtime dependencies and pytest, HTTPX and Ruff in the default dev group. Root Gemfile declares Kamal; generate and commit Gemfile.lock using Bundler, not gem:kamal. Do not add mise exec wrappers. The backend starts with uv run uvicorn backend.main:app and GET /api/health returns 200 with {\"status\":\"ok\"} before any frontend build exists. Unknown /api paths return 404. No compression endpoint, database or migrations are created; the migration smoke check is explicitly N/A.",
+      "files_hint": [
+        "mise.toml",
+        "pyproject.toml",
+        "uv.lock",
+        "Gemfile",
+        "Gemfile.lock",
+        "backend/__init__.py",
+        "backend/main.py",
+        ".gitignore"
+      ]
+    },
+    {
+      "id": "S2",
+      "title": "Add the React shell and root setup and dev tasks",
+      "layer": "scaffold",
+      "deps": ["S1"],
+      "acs": [],
+      "dod": "Create a minimal React, Vite, TypeScript and Tailwind shell with npm lockfile, TypeScript checking in the build command, and ESLint. Configure Vite /api proxy to http://127.0.0.1:8000 and FastAPI production serving of frontend/dist without masking API 404 responses. Root mise run setup runs uv sync --locked, npm --prefix frontend ci --include=dev, then bundle install, stopping on errors. Root mise run dev starts the two tasks specified in the architecture map concurrently with at least two task slots, reload and prefixed logs. Neither command requires changing directories or mise exec. Do not run setup implicitly on dev startup. Both manifests and lockfiles must exist before testing setup. Build succeeds with npm --prefix frontend run build. The shell is not a compression form implementation.",
+      "files_hint": [
+        "frontend/package.json",
+        "frontend/package-lock.json",
+        "frontend/index.html",
+        "frontend/src/main.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/index.css",
+        "frontend/vite.config.ts",
+        "frontend/tsconfig*.json",
+        "frontend/eslint.config.js",
+        "backend/main.py",
+        "mise.toml"
+      ]
+    },
+    {
+      "id": "S3",
+      "title": "Prove the skeleton and one-command local workflow",
+      "layer": "scaffold",
+      "deps": ["S2"],
+      "acs": [],
+      "dod": "Add one pytest/HTTPX smoke-test file for health, built index, an emitted asset and unknown /api paths. Run uv run pytest, uv run ruff check ., npm --prefix frontend run lint and npm --prefix frontend run build successfully. Verify bundle check and bundle exec kamal version. Exercise mise run setup in a disposable checkout after lockfiles exist, confirm a repeated successful run preserves lockfiles, and confirm a failed install prevents later setup commands. Start mise run dev from the root, load the page and proxied health, check backend reload and frontend HMR, then send one Ctrl+C and verify both ports and reload children are gone. Record exact commands and outcomes. The migration smoke check remains N/A; no test infrastructure for compression behavior is added.",
+      "files_hint": [
+        "tests/test_smoke.py",
+        "pyproject.toml",
+        "mise.toml"
+      ]
+    },
+    {
+      "id": "S4",
+      "title": "Build and verify the application image in CI",
+      "layer": "scaffold",
+      "deps": ["S3"],
+      "acs": [],
+      "dod": "Add a multi-stage Dockerfile that builds the frontend with Node.js 24 and installs locked Python runtime dependencies in a non-root Python 3.14 image. It starts Uvicorn on 0.0.0.0:8000 without reload and includes frontend/dist. Exclude secrets, local environments and build-only tools from the final image. docker build -t image-compressor:smoke . succeeds; a local container serves health, index and emitted assets, and returns 404 for unknown /api paths. GitHub Actions uses mise.toml and all lockfiles to run build, pytest, Ruff, ESLint, Bundler checks and the same HTTP container smoke scenarios. No live deployment, server provisioning or placeholder Kamal config is added. Record Docker checks as unverified if no daemon is available; do not claim the scaffold is fully verified until they run.",
+      "files_hint": [
+        "Dockerfile",
+        ".dockerignore",
+        ".github/workflows/ci.yml",
+        "tests/test_smoke.py"
+      ]
+    },
+    {
+      "id": "S5",
+      "title": "Document the runnable foundation and reconcile the map",
+      "layer": "scaffold",
+      "deps": ["S4"],
+      "acs": [],
+      "dod": "Write concise project conventions in CLAUDE.md and root setup, dev, checks and container commands in README.md. Explain that the owner runs mise run setup, then mise run dev; Kamal uses Gemfile and bundle exec kamal, with no mise exec wrappers. Preserve the authored brief and local SDD settings. Replace planned-path references in the map with real source anchors and reconcile machine commands against the checks that ran. Report each task's evidence, explicitly mark migrations N/A, and identify deployment infrastructure and compression behavior as later work. Commit the verified skeleton with a short message and hand off to feature specification.",
+      "files_hint": [
+        "CLAUDE.md",
+        "README.md",
+        "docs/architecture-map.md"
+      ]
+    }
+  ]
+}
