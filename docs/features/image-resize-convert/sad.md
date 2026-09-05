@@ -114,31 +114,41 @@ The owner confirmed these two containers and their responsibility split. Develop
 
 ## 6. Runtime view
 
-<!-- 🎯 Why: the RUNTIME FLOW of 1–2 critical scenarios — who talks to whom, when, in what order.
-     Without §6, §5 is just boxes with no life.
-     📋 Write: a Mermaid sequenceDiagram. Participants are names from §5 (don't invent new ones).
-     Messages are semantic («saves a draft»), NO HTTP verbs / paths / status codes — endpoint-level
-     sequences arrive at the `api` stage.
-     📌 e.g. «author → web: composes draft → web → content API: save». Seed the primary flow(s) here;
-     the `sequences` stage then covers every §5 AC (no cap). Never N/A for M+; XS/S keeps ≥1 happy-path flow. -->
-
-**Critical flow 1: <flow name>**
+**Critical flow: process, download and reset, with recoverable failure.**
 
 ```mermaid
 sequenceDiagram
-    actor Actor
-    participant Web
-    participant Service
-    participant Store
-    Actor->>Web: <action>
-    Web->>Service: <call>
-    Service->>Store: <write>
-    Store-->>Service: ok
-    Service-->>Web: result
-    Web-->>Actor: confirmation
+    actor Owner as Власник картинки
+    participant Web as Browser UI
+    participant App as Application
+    Owner->>Web: Select Оригінал and set parameters
+    Web->>Web: Validate local bytes and prepare optional Preview
+    Owner->>Web: Submit processing
+    Web->>Web: Lock controls and mark current operation
+    Web->>App: Send Оригінал and transformation parameters
+    App->>App: Validate parameters, content and input limits
+    alt Accepted input and successful processing
+        App->>App: Orient, fit bounds and encode Результат
+        App-->>Web: Complete binary Результат
+        Web->>Web: Check current operation and initiate one download
+        Web-->>Owner: Clean form after browser handoff
+        Web->>Web: Release Preview and download resources at their lifecycle ends
+    else Recoverable failure
+        App-->>Web: Explain rejection or processing failure
+        Web-->>Owner: Restore controls with current file and parameters
+    end
+    App->>App: Release remaining owned operation resources
 ```
 
-**Critical flow 2: <e.g. async event propagation>** — <if applicable, otherwise N/A>.
+**Selection.** Every new selection clears the old Preview and resets format and bounds, including invalid selections. Reject empty files and files above the byte limit before preparing Preview. A current native-image load failure silently omits Preview. Delayed work cannot restore a prior selection. Preview availability never gates an otherwise eligible submission.
+
+**Validation and transformation.** Enforce parameters at the HTTP boundary. Bound upload parsing and validate actual file bytes before expensive decoding. Inspect supported content, static-image rules and selected-image dimensions before full pixel decoding; preserve decoder safety protections and verify decoded dimensions again where a decoder can change them. Apply orientation before calculating dimensions. Use the largest proportional scale not exceeding one or either supplied bound; round each dimension to the nearest whole pixel with halves up and minimum one. The specified 1000 by 333 image with width 500 must become 500 by 167; an unverified library thumbnail rounding rule is not a substitute. Ineffective bounds and same-format requests still normalize the output.
+
+**Completion.** Wait for the whole successful response before attempting a download. Recheck that the operation is current and not consumed. Hand the Blob URL to a native download action once, with the requested format and matching filename extension, then return to the initial form. Reset clears the native file input too, allowing the same file to be selected again. No result panel, repeat-download control or result object remains in application state.
+
+**Failure and interruption.** Recoverable validation, processing and transfer errors restore controls with the same selected file and parameters. Closing or reloading invalidates browser work without restoration. The server closes upload handles and image resources on success, errors and interruption; native work may finish before its resources can be closed. The response owns encoded output only until response completion or failure. No prior result can be restored. The diagram shows logical lifecycle completion, not permission to keep a decoded image alive throughout a response unnecessarily.
+
+Download URL release must not be driven by form reset or assumed to follow a disk-save event. Its safe handoff boundary remains a mandatory browser feasibility gate in §11. `sdd:sequences` expands this seed into full user-story and AC branch coverage.
 
 ## 7. Deployment view
 
