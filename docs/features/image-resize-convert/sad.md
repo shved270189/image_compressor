@@ -236,22 +236,16 @@ Feature implementation uses existing tests before introducing new test files or 
 
 ## 11. Risks and technical debt
 
-<!-- 🎯 Why: ⭐ collects EVERYTHING that can break — not only the technical. Without §11 risks get
-     discussed at standups and lost; debt lives only in the head of whoever accepted it.
-     📋 Write: a risk/debt table — severity — mitigation — owner. Accepted debt in its own block.
-     📌 The first risk is often a product risk, not a technical one. That's normal. -->
-
-<!-- Severity literals: Low / Medium / High for regular risks; "Open question" for rows created by
-     a Save-as-OQ resolution during the Socratic walk (see references/socratic.md). -->
-
-| Risk / debt | Severity | Mitigation | Owner |
+| Risk / debt | Severity | Mitigation and due | Owner |
 |---|---|---|---|
-| <e.g. Worker lag may reach hours during a downstream outage> | Medium | <alert >10 min, on-call playbook, retry backoff> | <DevOps> |
-| <e.g. No event-schema versioning in v1> | Medium | <ADR-NNNN planned for v2, tolerate unknown fields> | <Backend> |
-| Open architectural decision: <decision-headline> | Open question | Resolve before <stage trigger or YYYY-MM-DD>; <inline rationale from the Save-as-OQ> | <owner> |
+| HEIC platform and color feasibility | High | Before `sdd:tasks`, prove the primary image is selected even when not first, extra images are omitted, real animation is rejected, HDR becomes ordinary 8-bit output, orientation is applied once, and ICC/NCLX or other required color interpretation survives correctly on macOS and Linux. Published wheels alone are insufficient evidence. | Tech Lead |
+| Resource cleanup and automatic browser handoff | High | Before `sdd:tasks`, prove upload/decoder/output ownership on success, failure and interruption, and complete downloads after form reset and URL release in the agreed browser matrix. Record a verified release boundary; do not replace this with an arbitrary delay or disk-save event assumption. | Tech Lead |
+| Untrusted decoding and temporary uploads | High | Before implementation acceptance, review byte/pixel enforcement before expensive decoding, partial multipart cleanup, decoder protections and confidential error/log behavior. Include requests bypassing the form. | Security Lead |
+| Foundation smoke tests do not prove feature behavior | Medium | Before implementation acceptance, retain health/assets/API-404 smoke coverage and add the feature evidence in §10. Do not count the scaffold's earlier browser/container checks as image-processing evidence. | Tech Lead |
 
-**Accepted debt (acceptable in v1, plan to fix later):**
-- <e.g. the entity is immutable / unversioned — OK for v1, may need audit versioning in v2>
+**Readiness.** Architectural choices are approved; HEIC runtime behavior and the complete resource/download lifecycle are not yet verified. Both pre-tasks gates remain open. Sequences and contracts may describe the agreed behavior, but tasks must not proceed until evidence closes those gates. A failed check must be resolved without silently removing accepted HEIC, color, privacy or automatic-download behavior.
+
+**Accepted debt.** No deliberate implementation shortcut is accepted. There are no saved-as-open product decisions. The risks above carry owners and explicit stage deadlines; they are required feasibility and acceptance checks, not omitted requirements.
 
 ## 12. Glossary
 
