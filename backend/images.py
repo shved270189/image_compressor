@@ -187,7 +187,7 @@ def track_is_animated(track, runs, movie_scale, media_scale):
     movie_time = Fraction(0)
     for duration, start, rate_integer, rate_fraction in entries:
         span = Fraction(duration * media_scale, movie_scale)
-        rate = Fraction(rate_integer * 65536 + rate_fraction, 65536)
+        rate = Fraction(rate_integer * 65536 + (rate_fraction & 65535), 65536)
         if start < -1:
             raise InvalidImage("Invalid HEIF edit time.")
         if start != -1:

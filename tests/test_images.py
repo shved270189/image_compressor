@@ -274,3 +274,11 @@ def test_dwell_after_composition_timeline_end_is_not_presented():
     images = image_module()
     data = timeline(durations=(100, 1), offsets=(0, -99), edits=[(1, 50, 0), (1, 0, 0)])
     assert not images.heif_is_animated(data)
+
+
+def test_fractional_forward_edit_rate():
+    images = image_module()
+    data = bytearray(timeline(edits=[(100, 0, 0)]))
+    offset = data.index(b"elst") + 20
+    data[offset : offset + 4] = (32768).to_bytes(4)
+    assert images.heif_is_animated(data)
