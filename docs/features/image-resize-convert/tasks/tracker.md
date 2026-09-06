@@ -14,9 +14,9 @@
 | T8 | [Serve request-scoped image results](./serve-request-scoped-image-results.md) | ports | Tech Lead | 8h | T1, T7 | done |
 | T9 | [Build selection and local preview](./build-selection-and-local-preview.md) | ui | Tech Lead | 6h | — | done |
 | T10 | [Submit and download the current result](./submit-and-download-the-current-result.md) | ui | Tech Lead | 6h | T8, T9 | done |
-| T11 | [Verify browser acceptance](./verify-browser-acceptance.md) | tests | Tech Lead | 6h | T10 | todo |
-| T12 | [Verify security and container behavior](./verify-security-and-container-behavior.md) | tests | Tech Lead | 6h | T8 | todo |
-| T13 | [Document the completed workflow](./document-the-completed-workflow.md) | docs | Tech Lead | 2h | T11, T12 | todo |
+| T11 | [Verify browser acceptance](./verify-browser-acceptance.md) | tests | Tech Lead | 6h | T10 | review |
+| T12 | [Verify security and container behavior](./verify-security-and-container-behavior.md) | tests | Tech Lead | 6h | T8 | review |
+| T13 | [Document the completed workflow](./document-the-completed-workflow.md) | docs | Tech Lead | 2h | T11, T12 | review |
 
 **Total:** 13 tasks, 78 hours, 9.75 person-days at 8 hours/day. Estimates exclude waiting for device access and owner/security sign-off.
 
@@ -37,3 +37,7 @@ Tech Lead owns delivery; Security Lead accepts T12 security review and Project o
 - T9: browser RED missing file selection; GREEN Chrome selection, byte boundaries, preview ownership, replacement/reset, no upload before submission, responsive overflow and reduced motion checks. Build/typecheck, ESLint, Ruff and 174 host tests passed. Native text inputs with numeric input mode preserve arbitrarily large dimension strings without numeric coercion.
 
 - T10: RED absent processing POST; GREEN complete download/reset/focus, single submission, safe structured errors, retained retry, full-body wait, interruption and stale completion suppression. Browser evidence in `_audit/implementation-download.md`. Build/typecheck, ESLint, Ruff and 180 host tests passed.
+
+- T11: Chrome implemented-flow checks pass, including full-body interruption, stale work, actual pending-page closure, HEIC output formats, keyboard and both widths. Native Safari/Firefox complete downloads pass. Full native-engine matrices, real iPhone Safari and owner contrast review remain open; see `_audit/browser-acceptance.md`.
+- T12: 180 host and 180 Linux tests plus live non-root container smoke pass. Independent review defects fixed in `08698b0`. Security Lead acceptance remains open; see `_audit/security-container-acceptance.md`.
+- T13: README and architecture map prepared against actual implementation/evidence, explicitly documenting pending acceptance. Final acceptance depends on T11/T12; no completed browser/security sign-off is claimed.

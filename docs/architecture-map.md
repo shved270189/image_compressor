@@ -2,8 +2,8 @@
 status: current
 mode: greenfield-bootstrap
 bootstrap_status: materialized
-updated_at: "2026-09-05"
-reflects_commit: "616dca8"
+updated_at: "2026-09-06"
+reflects_commit: "08698b0"
 language: "Python 3.14 + TypeScript"
 build_cmd: "npm --prefix frontend run build"
 test_cmd: "uv run pytest"
@@ -14,11 +14,11 @@ frontend: "React + Vite + TypeScript + Tailwind"
 
 # Architecture map — image-compressor
 
-The foundation is materialized over baseline commit `616dca8`. This map includes the skeleton committed with this update. Build, boot, tests, lint, setup, reload, HMR and local container smoke passed on 2026-09-05. [Scaffold tasks](features/_scaffold/tasks.json) contain command evidence. Hosted GitHub Actions has not run; no remote is configured.
+The foundation and image-resize-convert implementation are materialized. [Feature tracker](features/image-resize-convert/tasks/tracker.md) records implementation checks and remaining browser/security acceptance. [Scaffold tasks](features/_scaffold/tasks.json) retain setup evidence. Hosted GitHub Actions and public deployment remain unverified.
 
 ## Stack
 
-- Python 3.14, FastAPI, Uvicorn and Pillow. uv owns the root project and default development dependencies — `pyproject.toml:1` and `uv.lock`.
+- Python 3.14, FastAPI, Uvicorn, Pillow 12.3.0 and pillow-heif 1.6.0. Starlette 1.6.0 and python-multipart 0.0.22 are pinned for bounded parsing; Pillow bundles the LittleCMS binding used for color profiles. uv owns the root project and default development dependencies — `pyproject.toml:1` and `uv.lock`.
 - React, Vite, TypeScript and Tailwind use npm — `frontend/package.json:1` and `frontend/package-lock.json`. TypeScript stays on 6.0.x to satisfy typescript-eslint peer requirements.
 - mise pins Python 3.14.6, Node.js 24.18.1, uv 0.12.9 and Ruby 4.0.5 — `mise.toml:1`. `UV_PYTHON` points to mise's interpreter; uv owns `.venv` — `mise.toml:7`.
 - Kamal is declared in `Gemfile:3` and locked to 2.12.0. Ruby and Bundler are deployment tools, outside the application runtime.
@@ -26,13 +26,13 @@ The foundation is materialized over baseline commit `616dca8`. This map includes
 
 ## C4 — system as it is
 
-The application image exists and runs locally. Image processing is future behavior. The public proxy and deployment below remain the target topology.
+The application image exists and runs locally. Image resizing and conversion are implemented; full acceptance remains open. The public proxy and deployment below remain the target topology.
 
 ```mermaid
 C4Context
     title Image compressor foundation
     Person(user, "Image owner", "Prepares one image for size and format requirements")
-    System(compressor, "Image compressor", "Runnable shell; image processing is the next feature")
+    System(compressor, "Image compressor", "Single-image resizing and format conversion")
     Rel(user, compressor, "Opens the application", "HTTP locally; HTTPS after deployment")
 ```
 
@@ -40,11 +40,11 @@ C4Context
 C4Container
     title Application image and target deployment
     Person(user, "Image owner", "Uses the browser")
-    Container(ui, "Browser UI", "React and TypeScript", "Renders the shell; future input and result form")
+    Container(ui, "Browser UI", "React and TypeScript", "Local selection, optional preview, settings and automatic download")
     Container(proxy, "kamal-proxy", "Future reverse proxy", "Routes public traffic after deployment")
-    Container(app, "Application", "FastAPI and Pillow", "Serves health and built frontend; future image processing")
+    Container(app, "Application", "FastAPI and Pillow", "Serves health, processing API and built frontend")
     Rel(user, ui, "Uses")
-    Rel(ui, proxy, "Requests assets and future API", "HTTPS")
+    Rel(ui, proxy, "Requests assets and processing API", "HTTPS")
     Rel(proxy, app, "Forwards requests", "HTTP port 8000")
 ```
 
@@ -54,33 +54,34 @@ One image contains backend code and built frontend assets. The browser UI is a l
 
 | Module | Path | Wired at | Responsibility |
 |---|---|---|---|
-| Backend | `backend/` | `backend/main.py:5` | Health endpoint and built frontend serving |
-| Frontend | `frontend/` | `frontend/src/main.tsx:6` | React shell and baseline styling |
+| Backend | `backend/` | `backend/main.py:5` | HTTP validation, bounded multipart, safe errors, response ownership and frontend serving |
+| Image functions | `backend/images.py` | `backend/main.py` | Static decoding, HEIF timelines, resize, color normalization and encoding |
+| Frontend | `frontend/` | `frontend/src/main.tsx:6` | Local selection/preview, one current request, download/reset and error retry |
 | Development tooling | Repository root | `mise.toml:13` | Sequential setup and concurrent dev servers |
 | Container delivery | Repository root | `Dockerfile:17` | One non-root application image |
 | Verification | `tests/`, `.github/workflows/` | `tests/test_smoke.py:10`, `.github/workflows/ci.yml:1` | Shared in-process and live-container smoke scenarios |
 
 ## Conventions
 
-- **Module wiring:** FastAPI entry point and health handler — `backend/main.py:5`. Future handlers call ordinary functions in `backend/images.py`; create that file when image behavior exists — `docs/adr/0002-single-service-and-kamal.md:13`.
-- **HTTP errors:** use Pydantic validation and standard FastAPI errors at the HTTP boundary. Define processing responses in the feature contract — `docs/adr/0002-single-service-and-kamal.md:23`.
+- **Module wiring:** FastAPI entry point and health handler — `backend/main.py:5`. The processing handler calls ordinary functions in `backend/images.py` directly — `docs/adr/0002-single-service-and-kamal.md:13`.
+- **HTTP errors:** validate multipart fields manually at the HTTP boundary and return safe FastAPI errors. `POST /api/v1/images/process` returns complete binary output with attachment headers; its contract is `docs/features/image-resize-convert/contracts/openapi.yaml` — `docs/adr/0002-single-service-and-kamal.md:23`.
 - **Frontend serving:** `app.frontend` serves the build with fallback disabled, preserving API 404s — `backend/main.py:13`. Registration is conditional on the build directory so the API boots before a build exists. Restart the backend after the first build.
 - **Tests:** pytest and HTTPX check health, built HTML, emitted JS/CSS and unknown API paths with JSON and HTML Accept headers — `tests/test_smoke.py:10`. `SMOKE_BASE_URL` runs the same scenarios against a live container. Ruff, TypeScript and ESLint provide static checks.
-- **UI communication:** future browser requests use relative `/api` fetch calls. Vite proxies `/api` to the backend — `frontend/vite.config.ts:8`. Use React local state; no global store, server-cache library or client router.
+- **UI communication:** browser processing uses relative `/api/v1/images/process` fetch calls. Vite proxies `/api` to the backend — `frontend/vite.config.ts:8`. Use React local state; no global store, server-cache library or client router.
 
 ## Datastores
 
 No persistent datastore, image IDs, object store, queue or migration tool exists. `migration_tool: ""` means N/A, not a missing command — `docs/adr/0003-transient-image-processing.md:16`.
 
-Future uploads use request-scoped FastAPI `UploadFile` storage. Future encoded results remain in memory until the response completes. Specify resource limits and cleanup for completion, errors and interruption before implementing processing — `docs/adr/0003-transient-image-processing.md:13`.
+Uploads use request-scoped spooled `UploadFile` storage. Parsing limits file bytes to 20,000,000 and decoding limits pixels to 40,000,000. A shielded executor operation owns the upload until native work finishes; ExitStack closes decoded/intermediate images. The response clears encoded bytes after completion or send failure. No image or filename is logged; parser diagnostics are disabled — `docs/adr/0003-transient-image-processing.md:13`.
 
 ## Frontend / UI foundation
 
-- **Closest precedent:** `frontend/src/App.tsx:1` is a shell, not the compression form. Add the agreed single form with independently optional limits in the feature.
+- **Closest precedent:** `frontend/src/App.tsx` owns the single form with independently optional dimension limits and JPEG/PNG/WebP selection. Local preview URLs are revoked on replacement, failure, success and teardown.
 - **Components:** native accessible controls and React local state. Extract shared components only for actual reuse; no third-party component kit — `docs/adr/0002-single-service-and-kamal.md:25`.
 - **Styling:** Tailwind Vite plugin — `frontend/vite.config.ts:6`. Typography, warm background, dark text and green accent live in one token entry point — `frontend/src/index.css:3`. The feature must retain deliberate spacing and a clear primary action, with the form as the focus — `docs/idea-brief.md:47`.
-- **Motion:** the shell has CSS entry motion gated by reduced-motion preference — `frontend/src/index.css:21`. Future controls, selection, processing and results need immediate interaction, stable layout, truthful progress, keyboard access, visible focus, readable contrast and clear errors — `docs/idea-brief.md:49` and `docs/adr/0002-single-service-and-kamal.md:25`.
-- **Acceptance:** the shell was rendered in Chrome and HMR verified. Review the complete image-to-result flow on mobile and desktop when the feature exists; scaffold does not satisfy that future acceptance gate.
+- **Motion:** the shell has CSS entry motion gated by reduced-motion preference — `frontend/src/index.css:21`. Controls use native labels, keyboard focus and a truthful busy state without percentages. One AbortController identifies the current request; complete Blob handoff happens once, then the result URL is revoked and the native file input resets. Recoverable errors preserve selection; pagehide invalidates work — `docs/idea-brief.md:49` and `docs/adr/0002-single-service-and-kamal.md:25`.
+- **Acceptance:** Chrome flow checks and native Safari/Firefox downloads are recorded in [browser acceptance](features/image-resize-convert/_audit/browser-acceptance.md). Full engine matrices, real iPhone Safari and owner contrast acceptance remain open.
 
 ## Root development commands
 
@@ -105,15 +106,15 @@ Open <http://localhost:5173>. Vite proxies `/api` to <http://127.0.0.1:8000>. Ro
 
 Kamal runs through `bundle exec kamal`. A future deployment configuration uses `proxy.app_port: 8000` and health path `/api/health`. Server addresses, domain, registry and credentials require a separate deployment task — `docs/adr/0002-single-service-and-kamal.md:17`.
 
-## Constraints and next feature
+## Implemented scope and remaining acceptance
 
 - One image and one form; no batch processing, history, presets, cropping or stretching — `docs/idea-brief.md:28`.
-- Width, height and file-size limits are independently optional. Preserve aspect ratio; dimensions may decrease to satisfy file size — `docs/idea-brief.md:41` and `docs/idea-brief.md:43`.
-- Formats, upload byte and pixel limits, minimum quality and dimensions, unattainable targets and interruption behavior need feature specification — `docs/idea-brief.md:55` and `docs/adr/0003-transient-image-processing.md:17`.
-- Hosted CI, public deployment and complete feature UI remain unverified. Local skeleton checks are green; migrations are explicitly N/A.
+- Width and height are independently optional; preserve aspect ratio with no enlargement. A target output file size is outside this feature. The [feature spec](features/image-resize-convert/spec.md) narrows the broader idea brief.
+- Static JPEG/PNG/WebP/HEIC input becomes JPEG/PNG/WebP output. JPEG uses white behind alpha; metadata is stripped after orientation. HEIC primary-image selection and HDR-to-SDR normalization are implemented. Codec output dimensions above WebP 16,383 or JPEG 65,500 return actionable 422, as approved in the feature amendment.
+- Hosted CI, public deployment, full browser acceptance and Security Lead sign-off remain open. Android is owner-deferred; migrations are N/A.
 
 ## Reconciliation
 
 The [idea brief](idea-brief.md) and accepted [ADRs](adr/) remain authoritative for product and foundation decisions. `README.md` documents the runnable commands; `CLAUDE.md` records project conventions. The local SDD settings remain unchanged.
 
-Commit `1cd6142` records the brief; `5e334ab` establishes the foundation; `616dca8` adds visual requirements. This scaffold materializes that foundation. `_scaffold` is a repository stage with no feature size or pipeline route.
+Commit `1cd6142` records the brief; `5e334ab` establishes the foundation; `616dca8` adds visual requirements. The image feature extends that foundation without new service or datastore boundaries. `_scaffold` is a repository stage with no feature size or pipeline route.

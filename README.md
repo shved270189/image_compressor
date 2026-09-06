@@ -1,7 +1,40 @@
 # Image compressor
 
-Runnable foundation for a single-image preparation app. FastAPI serves the health
-endpoint and built React frontend. Image processing is not implemented yet.
+Resize and convert one static JPEG, PNG, WebP or HEIC image to JPEG, PNG or WebP.
+FastAPI serves the processing endpoint and built React frontend.
+
+## Image workflow
+
+1. Select a non-empty image up to 20,000,000 bytes. Preview stays local and is
+   optional when the browser cannot display the format.
+2. Optionally set maximum width and height, and choose an output format (JPEG by
+   default). Empty dimensions impose no bound; images never enlarge or crop.
+3. Process the image. Controls stay locked until the complete response arrives.
+   One result downloads automatically; the form clears for the next image.
+
+The server also enforces 40,000,000 decoded pixels, including equality. Dimensions
+must be positive whole pixel counts. Output sides above WebP's 16,383 or JPEG's
+65,500 pixel limit produce an explanatory error: reduce a bound and retry.
+There is no automatic extra reduction to those codec limits.
+
+JPEG composites transparency onto white; PNG and WebP preserve alpha. Orientation
+is applied before removing EXIF, GPS, camera and textual metadata. Compatible
+color interpretation is preserved. HEIC uses the primary static image, omits extra
+images and converts HDR to ordinary 8-bit output. Animated inputs are rejected.
+Results are not guaranteed smaller or byte-identical, including same-format conversion.
+
+Errors retain the current selection and settings for an explicit retry. Successful
+download handoff or page closure releases browser resources. The server retains
+no original or result for later retrieval; upload spools and image buffers are
+operation-scoped. Native work already running may finish before cleanup.
+
+The contract is [OpenAPI](docs/features/image-resize-convert/contracts/openapi.yaml).
+Multipart transport also limits the body to 20,065,536 bytes, cumulative part
+header names/values to 16,384 bytes and each text field to 1,024 bytes.
+
+Implementation checks are recorded in the [task tracker](docs/features/image-resize-convert/tasks/tracker.md).
+Full browser acceptance, real iPhone Safari, owner contrast approval and Security
+Lead acceptance remain open; prior feasibility probes do not close those gates.
 
 ## Local development
 
@@ -25,7 +58,7 @@ their children. mise can report an interrupted task as an error on Ctrl+C.
 
 ## Checks
 
-Build first: the smoke test checks the real HTML, emitted JS/CSS, health and API 404s.
+Build first: the smoke test checks real HTML/assets, health, image conversion and API 404s.
 
 ```sh
 npm --prefix frontend run build
