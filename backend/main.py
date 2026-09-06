@@ -1,3 +1,5 @@
+import asyncio
+import logging
 import re
 from pathlib import Path
 
@@ -6,10 +8,12 @@ from python_multipart.exceptions import MultipartParseError
 from python_multipart.multipart import parse_options_header
 from starlette.datastructures import UploadFile
 from starlette.formparsers import MultiPartException, MultiPartParser
+from starlette.responses import Response
 
 from backend import images
 
 images.configure_codecs()
+logging.getLogger("python_multipart.multipart").disabled = True
 
 app = FastAPI()
 
@@ -133,6 +137,59 @@ async def parse_image_request(request: Request):
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+class ImageResponse(Response):
+    async def __call__(self, scope, receive, send):
+        try:
+            await super().__call__(scope, receive, send)
+        finally:
+            self.body = b""
+
+
+@app.post(
+    "/api/v1/images/process", operation_id="processImage", response_class=ImageResponse
+)
+async def process_image(request: Request):
+    upload, width, height, output_format = await parse_image_request(request)
+
+    def work():
+        with upload.file:
+            try:
+                return images.process_image(upload.file, width, height, output_format)
+            except images.ImageTooLarge:
+                raise HTTPException(413, "Image exceeds 40,000,000 pixels.") from None
+            except images.UnsupportedImage:
+                raise HTTPException(
+                    415, "Choose a JPEG, PNG, WebP or HEIC image."
+                ) from None
+            except images.OutputTooLarge as error:
+                raise HTTPException(422, str(error)) from None
+            except images.InvalidImage:
+                raise HTTPException(
+                    422,
+                    "Image is corrupted, animated or has invalid color information.",
+                ) from None
+            except Exception:  # noqa: BLE001
+                raise HTTPException(
+                    500, "Image processing failed. Please try again."
+                ) from None
+
+    try:
+        future = asyncio.get_running_loop().run_in_executor(None, work)
+    except BaseException:
+        upload.file.close()
+        raise
+    future.add_done_callback(
+        lambda done: done.exception() if not done.cancelled() else None
+    )
+    output = await asyncio.shield(future)
+    extension = "jpg" if output_format == "jpeg" else output_format
+    return ImageResponse(
+        output,
+        media_type=f"image/{output_format}",
+        headers={"Content-Disposition": f'attachment; filename="result.{extension}"'},
+    )
 
 
 frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"

@@ -27,6 +27,10 @@ class ImageTooLarge(InvalidImage):
     pass
 
 
+class OutputTooLarge(InvalidImage):
+    pass
+
+
 def check_pixels(image):
     if image.width * image.height > MAX_PIXELS:
         raise ImageTooLarge("Image exceeds 40,000,000 pixels.")
@@ -34,8 +38,9 @@ def check_pixels(image):
 
 @contextmanager
 def decode_image(source):
-    try:
-        with closing(Image.open(source)) as image:
+    with ExitStack() as stack:
+        try:
+            image = stack.enter_context(closing(Image.open(source)))
             if image.format not in {"JPEG", "PNG", "WEBP", "HEIF"}:
                 raise UnsupportedImage("Choose a JPEG, PNG, WebP or HEIC image.")
             check_pixels(image)
@@ -53,11 +58,13 @@ def decode_image(source):
             image.load()
             check_pixels(image)
             ImageOps.exif_transpose(image, in_place=True)
-            yield image
-    except Image.DecompressionBombError:
-        raise ImageTooLarge("Image exceeds 40,000,000 pixels.") from None
-    except UnidentifiedImageError, OSError, SyntaxError:
-        raise InvalidImage("Image is empty or corrupted.") from None
+        except Image.DecompressionBombError:
+            raise ImageTooLarge("Image exceeds 40,000,000 pixels.") from None
+        except InvalidImage:
+            raise
+        except UnidentifiedImageError, OSError, SyntaxError, ValueError:
+            raise InvalidImage("Image is empty or corrupted.") from None
+        yield image
 
 
 def boxes(data):
@@ -368,10 +375,17 @@ def output_size(size, max_width=None, max_height=None):
 
 def process_image(source, max_width=None, max_height=None, output_format="jpeg"):
     with decode_image(source) as image, ExitStack() as stack:
+        size = output_size(image.size, max_width, max_height)
+        limit = {"webp": 16_383, "jpeg": 65_500}.get(output_format)
+        if limit and max(size) > limit:
+            raise OutputTooLarge(
+                f"{output_format.upper()} supports sides up to {limit:,} pixels. "
+                "Reduce maximum width or height and try again."
+            )
         resized = stack.enter_context(
             closing(
                 image.resize(
-                    output_size(image.size, max_width, max_height),
+                    size,
                     Image.Resampling.LANCZOS,
                 )
             )
@@ -543,6 +557,14 @@ def color_profile(image):
 @contextmanager
 def normalize_color(image):
     with ExitStack() as stack:
+        if image.mode in {"I;16", "I;16B", "I;16L", "I"}:
+            integer = stack.enter_context(closing(image.convert("I")))
+            scaled = stack.enter_context(
+                closing(integer.point(lambda value: value * (255 / 65535) + 0.5))
+            )
+            normalized = stack.enter_context(closing(scaled.convert("L")))
+            normalized.info = image.info.copy()
+            image = normalized
         profile = color_profile(image)
         has_alpha = "A" in image.getbands() or "transparency" in image.info
         mode = "RGBA" if has_alpha else "RGB"

@@ -153,3 +153,7 @@ This is test placement advice, not a pipeline change. Browser scenarios may be a
 The owner accepted all proposed per-AC levels and the strategy without edits, drops or deferred decisions. Edits-log: empty. Performance exclusion is an explicit accepted exception, not an unresolved product question. No public API, dependency, test infrastructure or implementation changes are part of this document.
 
 Structural verification must re-read this file and check: all sixteen ACs appear; error/authorization criteria have dedicated rows; each level is in the fixed vocabulary; no concrete test-tool names appear; the load decision is explicit and consistent with spec §6; and this separate file is correct for M/standard. Report the load item as an approved exception to the unmodified skill checklist, never as an unqualified six-of-six pass. Test execution and security acceptance remain pending implementation.
+
+## Approved output limit amendment — 2026-09-06
+
+AC-07/AC-15 contract coverage: a valid input whose computed result exceeds 16,383 pixels on either side for WebP or 65,500 for JPEG returns actionable 422; equality passes. Supplying a sufficient bound succeeds without extra reduction, and the UI retains input/parameters after rejection. The owner explicitly approved this exception to unconditional conversion success.

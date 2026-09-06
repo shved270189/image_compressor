@@ -65,6 +65,12 @@ paths:
         1000x333 with width 500 produces 500x167. Ineffective bounds and
         same-format requests remain valid and still normalize the output.
 
+        After the proportional geometry calculation, reject results with either
+        side above 16,383 pixels for WebP or 65,500 pixels for JPEG with 422.
+        Equality is allowed. Explain that maximum width/height must be reduced;
+        do not silently perform additional reduction. Supplied dimension values
+        still have no product upper bound.
+
         Composite partial and full transparency onto white for JPEG; retain
         transparency for PNG and WebP. Preserve correct color interpretation,
         transforming colors when the pixel model changes and keeping only a
@@ -189,7 +195,8 @@ paths:
                 detail: Input must contain a JPEG, PNG, WebP or HEIC image.
         '422':
           description: |
-            Missing file or all transformation parameters; invalid dimensions or
+            Result dimensions above the selected encoder limit;
+            missing file or all transformation parameters; invalid dimensions or
             output choice; empty, corrupted or animated input. Parameter errors
             may use FastAPI's structured validation envelope; explicit HTTP
             rejections use a readable detail string. Messages are explanatory,

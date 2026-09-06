@@ -196,3 +196,7 @@ Depth: medium. Independent clean-context ambiguity review completed. Six finding
 ## UX amendment — 2026-09-06
 
 The project owner explicitly replaced manual result inspection and download with automatic download and a clean form. On success, initiate one download and reset the form after browser handoff; show neither result characteristics nor a manual download action. On recoverable failure, retain the selected file and parameters for retry. This supersedes the earlier retained-result lifetime decision in the clarification log; all other transformation, input-limit and privacy requirements remain unchanged. US-04, AC-03, AC-13, AC-15 and AC-16 reflect this decision without changing their identifiers.
+
+## Output format limit amendment — 2026-09-06
+
+The owner approved a recoverable rejection when the computed result exceeds the selected encoder limits. This qualifies AC-07: each output side must be at most 16,383 pixels for WebP or 65,500 pixels for JPEG. Equality is allowed. Apply the existing proportional geometry first; if the result is still too large, return HTTP 422 with a readable instruction to reduce maximum width/height. Do not automatically reduce beyond the supplied bounds. Retain input and parameters for correction under AC-15. This is an output representation limit, not a new upper bound on supplied dimension parameters or on otherwise valid input images.
