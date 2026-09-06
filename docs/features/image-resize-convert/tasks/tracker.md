@@ -47,3 +47,5 @@ Tech Lead owns delivery; Security Lead accepts T12 security review and Project o
 - T11 owner follow-up (2026-09-06): the same image was processed twice consecutively; both downloads and both form resets explicitly confirmed. Exact browser unspecified; remaining matrix and T11 review status unchanged.
 
 - T11 owner reload check (2026-09-06): immediate reload after submission opens an empty form. Exact browser and in-flight timing unspecified; full interruption coverage is not inferred.
+
+- T11 owner validation check (2026-09-06): width 0 rejected visibly; correcting to 100 produces a download. Local validation recovery confirmed; server-error recovery and remaining browser matrix are not inferred.

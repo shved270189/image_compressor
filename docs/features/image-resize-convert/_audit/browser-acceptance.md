@@ -53,3 +53,8 @@ The owner confirmed that submitting an image and immediately reloading opens an
 empty form. Exact browser and whether server processing was still pending at
 reload were not specified; this proves the observed empty-form outcome, not the
 complete interruption matrix or suppression of every late download.
+
+The owner confirmed local dimension validation and correction: width 0 shows an
+error, and changing it to 100 allows a successful download. The exact browser
+was not specified. This verifies local validation recovery, not recovery from
+a server rejection or an interrupted response.
