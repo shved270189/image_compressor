@@ -1,6 +1,6 @@
 ---
 status: living
-updated_at: "2026-09-05"
+updated_at: "2026-09-06"
 ---
 
 # Roadmap — image-compressor
@@ -16,7 +16,7 @@ The owner can use a modern local single-page form to resize, convert and compres
 | # | Step | Source | Size | Status |
 |---|---|---|:---:|---|
 | 1 | Application foundation — [`_scaffold`](features/_scaffold/) | [architecture-map.md §Module inventory](architecture-map.md#module-inventory) | M | shipped |
-| 2 | Resize and convert an image — [`image-resize-convert`](features/image-resize-convert/) | [spec.md §1. Context](features/image-resize-convert/spec.md#1-context) | M | spec'd |
+| 2 | Resize and convert an image — [`image-resize-convert`](features/image-resize-convert/) | [spec.md §1. Context](features/image-resize-convert/spec.md#1-context) | M | shipped |
 | 3 | Compress an image to a file-size limit — `image-size-limit` | [idea-brief.md §2. Problem](idea-brief.md#2-problem), [§7. Recommendation](idea-brief.md#7-recommendation) | S | idea |
 
 **Resize and convert an image** delivers the complete selection-to-download flow, independently optional maximum width and height, aspect-ratio preservation, format selection with JPEG as the default and actual result dimensions and file size. An optional frontend-only preview appears above the form when the browser can display the selected file; it never uploads the file or blocks processing when unavailable. It includes the responsive visual design, accessible controls, clear errors and motion required by the brief, with mobile, desktop and reduced-motion verification. Upload limits and cleanup apply from this first processing increment. File-size targeting belongs to the following increment. The [feature specification](features/image-resize-convert/spec.md) records the agreed behavior.
@@ -42,9 +42,8 @@ None. Fog count: 0. Remaining questions are precise enough to record as open dec
 | # | Question | Type | Owner | Blocks |
 |---|---|:---:|:---:|:---:|
 | D2 | What minimum quality and dimensions are acceptable, and what should the user receive when the requested file-size limit cannot be met? See [idea-brief.md §6. Risks](idea-brief.md#6-risks) and [§8. Open questions](idea-brief.md#8-open-questions). | grilling | human | 3 |
-| D3 | How will the request lifecycle enforce resource limits and release upload handles, decoded images and result buffers after success, errors and interrupted transfer? Verify the existing stack's lifecycle behavior before implementing processing, following [ADR 0003 §Decision](adr/0003-transient-image-processing.md#decision). | research | agent | 2 |
 
-D2 closes during the file-size-limit specification. D3 requires design verification before planning processing implementation, followed by lifecycle tests during implementation. The resize-and-convert specification is recorded; the file-size-limit feature remains an idea.
+D2 closes during the file-size-limit specification. The file-size-limit feature remains an idea.
 
 ## Decisions so far
 
@@ -53,6 +52,7 @@ D2 closes during the file-size-limit specification. D3 requires design verificat
 - Preserve aspect ratio and treat width, height and file size as independently optional constraints — [idea-brief.md §7. Recommendation](idea-brief.md#7-recommendation).
 - Keep images request-scoped without persistent storage — [ADR 0003 §Decision](adr/0003-transient-image-processing.md#decision).
 - Limit this roadmap to local use — [Out of scope](#out-of-scope), as selected by the owner during roadmap review.
+- Enforce request-scoped image limits and cleanup without later retrieval — [ADR 0004](features/image-resize-convert/adr/0004-return-results-within-the-current-operation.md) (closes D3).
 
 Input/output formats and upload limits (D1) are resolved in [spec.md §5. Acceptance criteria](features/image-resize-convert/spec.md#5-acceptance-criteria) and [§6. Non-functional requirements](features/image-resize-convert/spec.md#6-non-functional-requirements).
 
@@ -69,7 +69,7 @@ flowchart LR
 | Wave | Steps | Zone per step (why parallel-safe) | Unlocks |
 |:---:|---|---|---|
 | 0 (complete) | 1 | `backend/`, `frontend/`, `tests/`, `.github/workflows/`, repository root `.`; historical foundation, no work to repeat | Existing runnable application |
-| 1 | 2 | `backend/`, `frontend/src/`, `tests/`; one lane for the complete image-to-result flow | Local resizing and format conversion |
+| 1 (complete) | 2 | `backend/`, `frontend/src/`, `tests/`; one lane for the complete image-to-result flow | Local resizing and format conversion |
 | 2 | 3 | `backend/`, `frontend/src/`, `tests/`; sequential because both feature increments modify the same form and processing path | Optional file-size targeting |
 
 No parallel implementation lanes are planned. Open decisions must be closed before their affected step is implemented. UI polish, accessibility, resource limits and cleanup are acceptance work within the relevant step, not separate later layers.
@@ -79,5 +79,6 @@ No parallel implementation lanes are planned. Open decisions must be closed befo
 | Step | Shipped | Link |
 |---|---|---|
 | Application foundation | 2026-09-05 | Commit `1837854` (`scaffold: materialize skeleton`); [completed tasks and local verification evidence](features/_scaffold/tasks.json) |
+| Resize and convert an image | 2026-09-06 | [CHANGELOG](features/image-resize-convert/CHANGELOG.md); review [PASS](features/image-resize-convert/_review/review-2026-09-06-2.md) |
 
-The foundation is complete locally. Hosted CI and public deployment were not verified and are not prerequisites for this local roadmap.
+The foundation and the resize-and-convert workflow are complete locally. Hosted CI and public deployment were not verified and are not prerequisites for this local roadmap.
