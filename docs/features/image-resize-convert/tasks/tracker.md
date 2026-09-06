@@ -43,3 +43,5 @@ Tech Lead owns delivery; Security Lead accepts T12 security review and Project o
 - T13: README and architecture map prepared against actual implementation/evidence, explicitly documenting pending acceptance. Final acceptance depends on T11/T12; no completed browser/security sign-off is claimed.
 
 - T11 owner update (2026-09-06): download/reset confirmed on iOS and desktop Safari/Firefox; owner accepted phone/desktop label, field and button readability. The stuck-processing report was explicitly withdrawn. Remaining native-engine failure/retry/interruption matrix stays in review; no regression fix was needed.
+
+- T11 owner follow-up (2026-09-06): the same image was processed twice consecutively; both downloads and both form resets explicitly confirmed. Exact browser unspecified; remaining matrix and T11 review status unchanged.

@@ -25,9 +25,10 @@ accessibility setValue did not update React's width state in the happy-path chec
 that check therefore establishes default conversion, not resizing. Firefox used
 actual typing and verifies resizing.
 
-The pending matrix requires selecting the same image twice, checking a corrupt
-input error and replacement, closing/reloading during processing, and opening the
-saved output. Owner review must include the initial, selected and error states.
+The pending matrix requires checking a corrupt input error and replacement,
+closing/reloading during processing, and opening the saved output. Repeated
+selection is owner-confirmed for the tested browser; its exact browser was not
+specified in the follow-up. Owner review must include the initial, selected and error states.
 Android remains deferred. Desktop viewport emulation is not real-device evidence.
 
 ## Owner verification — 2026-09-06
@@ -39,6 +40,11 @@ reset are therefore recorded as owner-confirmed. The owner subsequently confirme
 that labels, fields and buttons are readable on phone and desktop.
 
 This closes real-device happy-path verification and owner readability acceptance.
-It does not assert unreported failure/retry, repeated-selection, interruption or
+It does not assert unreported failure/retry, interruption or
 reduced-motion checks on those browsers. The remaining matrix and Security Lead
 acceptance stay open; no application code was changed for the withdrawn report.
+
+The owner also selected and processed the same image twice consecutively and
+explicitly confirmed that both downloads completed and the form cleared after
+each operation. This records a passed repeated-selection check; the follow-up
+did not identify which browser was used, so no all-browser coverage is inferred.
