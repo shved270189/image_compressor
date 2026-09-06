@@ -411,3 +411,96 @@ def test_reverse_fragment_edit_starts_at_visible_upper_boundary():
     run = box(b"trun", struct.pack(">II", 0, 3))
     data += box(b"moof", box(b"traf", header + run))
     assert images.heif_is_animated(data)
+
+
+def png_color_sample():
+    import zlib
+
+    def chunk(kind, payload):
+        return (
+            struct.pack(">I", len(payload))
+            + kind
+            + payload
+            + struct.pack(">I", zlib.crc32(kind + payload))
+        )
+
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
+        + chunk(b"gAMA", struct.pack(">I", 100000))
+        + chunk(
+            b"cHRM",
+            struct.pack(">8I", 31270, 32900, 64000, 33000, 30000, 60000, 15000, 6000),
+        )
+        + chunk(b"IDAT", zlib.compress(b"\x00\x80\x80\x80"))
+        + chunk(b"IEND", b"")
+    )
+
+
+@pytest.mark.parametrize("output_format", ["jpeg", "png", "webp"])
+def test_png_gamma_preserves_color_interpretation(output_format):
+    from PIL import ImageCms
+
+    images = image_module()
+    with io.BytesIO(png_color_sample()) as source:
+        data = images.process_image(source, None, None, output_format)
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.info.get("icc_profile"), "PNG gamma/chromaticities were lost"
+        profile = ImageCms.ImageCmsProfile(io.BytesIO(result.info["icc_profile"]))
+        with ImageCms.profileToProfile(
+            result, profile, ImageCms.createProfile("sRGB"), outputMode="RGB"
+        ) as display:
+            assert all(abs(v - 188) <= 1 for v in display.getpixel((0, 0)))
+
+
+@pytest.mark.parametrize("name", ["arrow.heic", "guitar_cw90.hif"])
+@pytest.mark.parametrize("output_format", ["jpeg", "png", "webp"])
+def test_heic_wide_gamut_and_nclx_profiles(name, output_format):
+    from PIL import ImageCms
+
+    images = image_module()
+    with (FIXTURES / name).open("rb") as source:
+        data = images.process_image(source, 32, None, output_format)
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.info.get("icc_profile")
+        profile = ImageCms.ImageCmsProfile(io.BytesIO(result.info["icc_profile"]))
+        assert profile.profile.xcolor_space.strip() == "RGB"
+        if name == "arrow.heic":
+            assert "Display P3" in ImageCms.getProfileName(profile)
+        assert not result.getexif()
+
+
+@pytest.mark.parametrize(
+    "mode,profile_name,color,expected",
+    [
+        ("CMYK", "cmyk.icc", (100, 50, 0, 20), (137, 165, 196)),
+        ("L", "gray.icc", 128, (146, 146, 146)),
+    ],
+)
+@pytest.mark.parametrize("output_format", ["jpeg", "png", "webp"])
+def test_color_model_conversion(mode, profile_name, color, expected, output_format):
+    from PIL import ImageCms
+
+    images = image_module()
+    profile = (FIXTURES / profile_name).read_bytes()
+    with io.BytesIO(
+        encoded(
+            "JPEG" if mode == "CMYK" else "PNG",
+            mode=mode,
+            color=color,
+            icc_profile=profile,
+        )
+    ) as source:
+        data = images.process_image(source, None, None, output_format)
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.mode == "RGB"
+        assert (
+            ImageCms.ImageCmsProfile(
+                io.BytesIO(result.info["icc_profile"])
+            ).profile.xcolor_space.strip()
+            == "RGB"
+        )
+        assert all(
+            abs(value - target) <= 2
+            for value, target in zip(result.getpixel((0, 0)), expected)
+        )

@@ -17,3 +17,10 @@ Immutable decoder controls copied from the pinned, hash-verified feasibility fix
 ## Generated track controls
 
 `generate_timelines.py` uses installed FFmpeg/libx265 to encode three independent test-pattern samples. It appends their movie/fragments to a static HEIC primary and relocates initial chunk offsets. The gallery adds an empty edit list. Both primary images decode with Pillow/libheif; both HEVC tracks decode without errors using FFmpeg `-map 0:1` (`-ignore_editlist 1` for the gallery). These are synthetic, independently encoded controls, not camera files. FFmpeg is fixture-generation tooling only, not a runtime/test dependency.
+
+## Color model controls
+
+`cmyk.icc` and `gray.icc` are macOS ColorSync Generic CMYK and Generic Gray profiles. Independent ImageCms anchors: CMYK(100,50,0,20) becomes sRGB(137,165,196); Gray128 becomes sRGB146.
+
+- `cmyk.icc` SHA-256: `0c8a584b288a306eac9e1d3f1e68bc1b64331c717ceb051420e6257f17b3509a`.
+- `gray.icc` SHA-256: `0ef4da994a2b833d54af2d4ecbb2c6654b7198ad9e6bd80ed86d684e54fd37d3`.

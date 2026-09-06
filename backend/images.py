@@ -1,9 +1,11 @@
+import ctypes
 import io
+import math
 import struct
 from contextlib import ExitStack, closing, contextmanager
 from fractions import Fraction
 
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image, ImageCms, ImageOps, UnidentifiedImageError, _imagingcms
 from pillow_heif import register_heif_opener
 
 MAX_PIXELS = 40_000_000
@@ -374,11 +376,8 @@ def process_image(source, max_width=None, max_height=None, output_format="jpeg")
                 )
             )
         )
-        has_alpha = "A" in resized.getbands() or "transparency" in resized.info
-        result = stack.enter_context(
-            closing(resized.convert("RGBA" if has_alpha else "RGB"))
-        )
-        profile = image.info.get("icc_profile")
+        result, profile = stack.enter_context(normalize_color(resized))
+        has_alpha = "A" in result.getbands()
         if output_format == "jpeg" and has_alpha:
             white = stack.enter_context(
                 closing(Image.new("RGBA", result.size, "white"))
@@ -394,3 +393,172 @@ def process_image(source, max_width=None, max_height=None, output_format="jpeg")
         with io.BytesIO() as output:
             result.save(output, format=output_format.upper(), **options)
             return output.getvalue()
+
+
+class Chromaticity(ctypes.Structure):
+    _fields_ = [(name, ctypes.c_double) for name in ("x", "y", "Y")]
+
+
+class Primaries(ctypes.Structure):
+    _fields_ = [(name, Chromaticity) for name in ("red", "green", "blue")]
+
+
+def rgb_profile(chromaticities, decode=None, gamma=None):
+    library = ctypes.CDLL(_imagingcms.__file__)
+    pointer = ctypes.c_void_p
+    library.cmsBuildGamma.argtypes = [pointer, ctypes.c_double]
+    library.cmsBuildGamma.restype = pointer
+    library.cmsBuildTabulatedToneCurve16.argtypes = [
+        pointer,
+        ctypes.c_uint32,
+        ctypes.POINTER(ctypes.c_uint16),
+    ]
+    library.cmsBuildTabulatedToneCurve16.restype = pointer
+    library.cmsCreateRGBProfile.argtypes = [
+        ctypes.POINTER(Chromaticity),
+        ctypes.POINTER(Primaries),
+        ctypes.POINTER(pointer),
+    ]
+    library.cmsCreateRGBProfile.restype = pointer
+    library.cmsSaveProfileToMem.argtypes = [
+        pointer,
+        pointer,
+        ctypes.POINTER(ctypes.c_uint32),
+    ]
+    library.cmsSaveProfileToMem.restype = ctypes.c_int
+    library.cmsCloseProfile.argtypes = [pointer]
+    library.cmsCloseProfile.restype = ctypes.c_int
+    library.cmsFreeToneCurve.argtypes = [pointer]
+    library.cmsFreeToneCurve.restype = None
+    if (decode is None) == (gamma is None):
+        raise ValueError("Supply one transfer function.")
+    if any(not math.isfinite(v) or not 0 <= v <= 1 for v in chromaticities):
+        raise InvalidImage("Invalid color chromaticities.")
+    if gamma is not None and (not math.isfinite(gamma) or gamma <= 0):
+        raise InvalidImage("Invalid color gamma.")
+    if gamma is not None:
+        curve = library.cmsBuildGamma(None, gamma)
+    else:
+        table = (ctypes.c_uint16 * 4096)(
+            *(round(max(0, min(1, decode(i / 4095))) * 65535) for i in range(4096))
+        )
+        curve = library.cmsBuildTabulatedToneCurve16(None, len(table), table)
+    if not curve:
+        raise InvalidImage("Invalid color transfer curve.")
+    try:
+        white = Chromaticity(*chromaticities[:2], 1)
+        primaries = Primaries(
+            *(Chromaticity(*chromaticities[i : i + 2], 1) for i in (2, 4, 6))
+        )
+        profile = library.cmsCreateRGBProfile(
+            ctypes.byref(white),
+            ctypes.byref(primaries),
+            (pointer * 3)(curve, curve, curve),
+        )
+        if not profile:
+            raise InvalidImage("Invalid RGB color profile.")
+        try:
+            length = ctypes.c_uint32()
+            if not library.cmsSaveProfileToMem(profile, None, ctypes.byref(length)):
+                raise InvalidImage("Cannot encode color profile.")
+            buffer = ctypes.create_string_buffer(length.value)
+            if not library.cmsSaveProfileToMem(profile, buffer, ctypes.byref(length)):
+                raise InvalidImage("Cannot encode color profile.")
+            return ImageCms.ImageCmsProfile(io.BytesIO(buffer.raw))
+        finally:
+            library.cmsCloseProfile(profile)
+    finally:
+        library.cmsFreeToneCurve(curve)
+
+
+def srgb_decode(value):
+    return value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+
+
+def color_profile(image):
+    profile = image.info.get("icc_profile")
+    if profile:
+        try:
+            return ImageCms.ImageCmsProfile(io.BytesIO(profile))
+        except OSError:
+            raise InvalidImage("Invalid image color profile.") from None
+    nclx = image.info.get("nclx_profile")
+    if nclx and nclx["color_primaries"] != 2 and nclx["transfer_characteristics"] != 2:
+        chromaticities = tuple(
+            nclx[f"color_primary_{color}_{axis}"]
+            for color in ("white", "red", "green", "blue")
+            for axis in ("x", "y")
+        )
+        transfer = nclx["transfer_characteristics"]
+        if transfer == 13:
+            return rgb_profile(chromaticities, decode=srgb_decode)
+        if transfer in (4, 5, 8):
+            return rgb_profile(chromaticities, gamma={4: 2.2, 5: 2.8, 8: 1}[transfer])
+        if transfer in (1, 6, 11, 12, 14, 15):
+            return rgb_profile(
+                chromaticities,
+                decode=lambda value: (
+                    value / 4.5
+                    if value < 4.5 * 0.018053968510807
+                    else ((value + 0.099296826809442) / 1.099296826809442) ** (1 / 0.45)
+                ),
+            )
+        if transfer == 7:
+            return rgb_profile(
+                chromaticities,
+                decode=lambda value: (
+                    value / 4
+                    if value < 4 * 0.022821585529445
+                    else ((value + 0.111572195921731) / 1.111572195921731) ** (1 / 0.45)
+                ),
+            )
+        if transfer in (9, 10):
+            return rgb_profile(
+                chromaticities,
+                decode=lambda value: (
+                    0
+                    if value == 0
+                    else 10 ** ((value - 1) * (2 if transfer == 9 else 2.5))
+                ),
+            )
+    if "srgb" in image.info:
+        return ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB"))
+    if "gamma" in image.info or "chromaticity" in image.info:
+        chromaticities = image.info.get(
+            "chromaticity", (0.3127, 0.329, 0.64, 0.33, 0.3, 0.6, 0.15, 0.06)
+        )
+        gamma = image.info.get("gamma")
+        if gamma is not None:
+            if gamma <= 0:
+                raise InvalidImage("Invalid image color gamma.")
+            return rgb_profile(chromaticities, gamma=1 / gamma)
+        return rgb_profile(chromaticities, decode=srgb_decode)
+    return None
+
+
+@contextmanager
+def normalize_color(image):
+    with ExitStack() as stack:
+        profile = color_profile(image)
+        has_alpha = "A" in image.getbands() or "transparency" in image.info
+        mode = "RGBA" if has_alpha else "RGB"
+        if profile and profile.profile.xcolor_space.strip() != "RGB":
+            target = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB"))
+            try:
+                result = stack.enter_context(
+                    closing(
+                        ImageCms.profileToProfile(
+                            image, profile, target, outputMode="RGB"
+                        )
+                    )
+                )
+            except ImageCms.PyCMSError:
+                raise InvalidImage("Invalid image color model.") from None
+            if has_alpha:
+                rgba = stack.enter_context(closing(image.convert("RGBA")))
+                alpha = stack.enter_context(closing(rgba.getchannel("A")))
+                result.putalpha(alpha)
+            profile = target
+        else:
+            result = stack.enter_context(closing(image.convert(mode)))
+        yield result, profile.tobytes() if profile else None
