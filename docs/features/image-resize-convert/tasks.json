@@ -1,0 +1,293 @@
+{
+  "slug": "image-resize-convert",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Bound multipart parsing",
+      "layer": "ports",
+      "deps": [],
+      "acs": [
+        "AC-11",
+        "AC-12",
+        "AC-16"
+      ],
+      "dod": "Parser and parameter regressions in tests/test_images_api.py pass, including exact 20,000,000 file bytes and closed partial handles after EOF/disconnection; documented transport bounds match implementation.",
+      "files_hint": [
+        "backend/main.py",
+        "pyproject.toml",
+        "uv.lock",
+        "tests/test_images_api.py",
+        "docs/features/image-resize-convert/contracts/openapi.yaml"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/bound-multipart-parsing.md"
+    },
+    {
+      "id": "T2",
+      "title": "Decode supported static images",
+      "layer": "domain",
+      "deps": [],
+      "acs": [
+        "AC-07",
+        "AC-09",
+        "AC-10",
+        "AC-12",
+        "AC-16"
+      ],
+      "dod": "tests/test_images.py decoding regressions pass for all four input formats, non-first HEIC primary and pre/post-decode pixel boundaries; decoding exceptions release every owned image.",
+      "files_hint": [
+        "backend/images.py",
+        "backend/main.py",
+        "pyproject.toml",
+        "uv.lock",
+        "tests/test_images.py",
+        "tests/fixtures/images/"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/decode-supported-static-images.md"
+    },
+    {
+      "id": "T3",
+      "title": "Classify HEIF presentation timelines",
+      "layer": "domain",
+      "deps": [
+        "T2"
+      ],
+      "acs": [
+        "AC-10",
+        "AC-12"
+      ],
+      "dod": "HEIF non-fragmented timing regressions in tests/test_images.py pass for real sequences and static edit/composition controls, without using image count or brands as the classification oracle.",
+      "files_hint": [
+        "backend/images.py",
+        "tests/test_images.py",
+        "tests/fixtures/images/"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/classify-heif-presentation-timelines.md"
+    },
+    {
+      "id": "T4",
+      "title": "Handle fragmented HEIF timelines",
+      "layer": "domain",
+      "deps": [
+        "T3"
+      ],
+      "acs": [
+        "AC-10",
+        "AC-12"
+      ],
+      "dod": "tests/test_images.py fragmented/edit/composition and decodable-gallery checks pass on macOS and Linux; no production NEEDS_TIMELINE fallback remains.",
+      "files_hint": [
+        "backend/images.py",
+        "tests/test_images.py",
+        "tests/fixtures/images/"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/handle-fragmented-heif-timelines.md"
+    },
+    {
+      "id": "T5",
+      "title": "Resize and normalize output",
+      "layer": "domain",
+      "deps": [
+        "T4"
+      ],
+      "acs": [
+        "AC-04",
+        "AC-05",
+        "AC-06",
+        "AC-07",
+        "AC-08",
+        "AC-09"
+      ],
+      "dod": "tests/test_images.py geometry/format regressions pass for the exact AC-04/05 examples, no enlargement, all 12 input/output combinations, alpha handling and service-metadata removal; color completion remains explicitly assigned to T6/T7.",
+      "files_hint": [
+        "backend/images.py",
+        "tests/test_images.py",
+        "tests/fixtures/images/"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/resize-and-normalize-output.md"
+    },
+    {
+      "id": "T6",
+      "title": "Preserve compatible color profiles",
+      "layer": "domain",
+      "deps": [
+        "T5"
+      ],
+      "acs": [
+        "AC-09"
+      ],
+      "dod": "tests/test_images.py SDR color checks pass on macOS and Linux for compatible ICC, pixel-model conversions, NCLX-only and PNG gAMA/cHRM sources; emitted profiles match output pixels while identifying metadata is absent.",
+      "files_hint": [
+        "backend/images.py",
+        "pyproject.toml",
+        "uv.lock",
+        "tests/test_images.py",
+        "tests/fixtures/images/"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/preserve-compatible-color-profiles.md"
+    },
+    {
+      "id": "T7",
+      "title": "Convert HDR to ordinary SDR output",
+      "layer": "domain",
+      "deps": [
+        "T6"
+      ],
+      "acs": [
+        "AC-09",
+        "AC-10"
+      ],
+      "dod": "tests/test_images.py HDR controls pass on macOS/Linux: real HLG and independent HLG/PQ anchors produce ordinary 8-bit output with matching color profiles, primary-image semantics and resource cleanup.",
+      "files_hint": [
+        "backend/images.py",
+        "tests/test_images.py",
+        "tests/fixtures/images/"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/convert-hdr-to-ordinary-sdr-output.md"
+    },
+    {
+      "id": "T8",
+      "title": "Serve request-scoped image results",
+      "layer": "ports",
+      "deps": [
+        "T1",
+        "T7"
+      ],
+      "acs": [
+        "AC-07",
+        "AC-11",
+        "AC-12",
+        "AC-13",
+        "AC-14",
+        "AC-15",
+        "AC-16"
+      ],
+      "dod": "tests/test_images_api.py endpoint and ownership regressions pass, including actual socket interruption and raw cancellation, correct binary headers/errors, no retrieval capability and no leaked upload/image/response owners.",
+      "files_hint": [
+        "backend/main.py",
+        "backend/images.py",
+        "tests/test_images_api.py",
+        "tests/fixtures/images/"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/serve-request-scoped-image-results.md"
+    },
+    {
+      "id": "T9",
+      "title": "Build selection and local preview",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-01",
+        "AC-02",
+        "AC-03",
+        "AC-07",
+        "AC-08",
+        "AC-09",
+        "AC-10",
+        "AC-11",
+        "AC-12",
+        "AC-16"
+      ],
+      "dod": "Recorded SCR-01 selection checks pass for default/empty/ready/local-validation states, byte boundaries, reset/stale Preview, zero upload requests and native controls; frontend build and lint pass.",
+      "files_hint": [
+        "frontend/src/App.tsx",
+        "frontend/src/index.css",
+        "docs/features/image-resize-convert/_audit/implementation-selection.md"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/build-selection-and-local-preview.md"
+    },
+    {
+      "id": "T10",
+      "title": "Submit and download the current result",
+      "layer": "ui",
+      "deps": [
+        "T8",
+        "T9"
+      ],
+      "acs": [
+        "AC-03",
+        "AC-11",
+        "AC-13",
+        "AC-14",
+        "AC-15",
+        "AC-16"
+      ],
+      "dod": "Recorded SCR-01 loading/validation/error/success checks pass: one complete download per current operation, safe URL release, clean reset/focus, same-file reselection and retained-input retry without stale or duplicate downloads.",
+      "files_hint": [
+        "frontend/src/App.tsx",
+        "frontend/src/index.css",
+        "docs/features/image-resize-convert/_audit/implementation-download.md"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/submit-and-download-the-current-result.md"
+    },
+    {
+      "id": "T11",
+      "title": "Verify browser acceptance",
+      "layer": "tests",
+      "deps": [
+        "T10"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-02",
+        "AC-03",
+        "AC-08",
+        "AC-10",
+        "AC-13",
+        "AC-15",
+        "AC-16"
+      ],
+      "dod": "The implemented-flow browser matrix in _audit/browser-acceptance.md passes on desktop Chrome/Safari/Firefox and iPhone Safari, including complete downloads, recovery/closure, both widths, keyboard/reduced motion and recorded owner contrast acceptance.",
+      "files_hint": [
+        "docs/features/image-resize-convert/_audit/browser-acceptance.md"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/verify-browser-acceptance.md"
+    },
+    {
+      "id": "T12",
+      "title": "Verify security and container behavior",
+      "layer": "tests",
+      "deps": [
+        "T8"
+      ],
+      "acs": [
+        "AC-07",
+        "AC-09",
+        "AC-10",
+        "AC-11",
+        "AC-12",
+        "AC-14",
+        "AC-16"
+      ],
+      "dod": "Host feature tests, Linux image/color verification and live-container smoke pass; _audit/security-container-acceptance.md records closed ownership checks, confidential errors/logs and Security Lead acceptance.",
+      "files_hint": [
+        "tests/test_images_api.py",
+        "tests/test_images.py",
+        "tests/test_smoke.py",
+        "docs/features/image-resize-convert/_audit/security-container-acceptance.md"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/verify-security-and-container-behavior.md"
+    },
+    {
+      "id": "T13",
+      "title": "Document the completed workflow",
+      "layer": "docs",
+      "deps": [
+        "T11",
+        "T12"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-07",
+        "AC-13",
+        "AC-15",
+        "AC-16"
+      ],
+      "dod": "README.md and docs/architecture-map.md match the accepted browser/security/container evidence, their local links resolve, and the documented frontend build, pytest and both lint commands pass.",
+      "files_hint": [
+        "README.md",
+        "docs/architecture-map.md"
+      ],
+      "file": "docs/features/image-resize-convert/tasks/document-the-completed-workflow.md"
+    }
+  ]
+}
