@@ -152,6 +152,258 @@ sequenceDiagram
 
 Download URL release must not be driven by form reset or assumed to follow a disk-save event. Its safe handoff boundary remains a mandatory browser feasibility gate in §11. `sdd:sequences` expands this seed into full user-story and AC branch coverage.
 
+### US-01 — Select and inspect an image
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    Note over U,UI: Precondition: SCR-01 is idle, with only file selection enabled when empty
+    U->>UI: Select an original
+    UI->>UI: Invalidate old selection work and release old Preview
+    UI->>UI: Clear bounds and select JPEG even for an invalid replacement
+    alt File is empty or exceeds 20000000 bytes
+        UI-->>U: Explain the selection error without Preview and disable processing
+    else File is non-empty and at most 20000000 bytes
+        UI-->>U: Enable parameters and processing immediately with JPEG and empty bounds
+        Note over U,UI: Selection, parameter edits and Preview cause no upload
+        par Continue without waiting for Preview
+            Note over U,UI: Allow US-02 or US-03 and submission while Preview is pending
+        and Prepare optional native local Preview
+            UI->>UI: Prepare Preview for the current selection
+            alt Selection changed, form reset or page closed
+                UI->>UI: Discard obsolete work without changing the current form or downloading
+            else Current image can be displayed
+                UI-->>U: Show the whole correctly oriented Preview above the form
+            else Current Preview is unsupported or fails, including HEIC
+                UI->>UI: Release failed Preview resources
+                UI-->>U: Omit Preview silently without a broken placeholder or processing error
+            end
+        end
+    end
+    Note over U,UI: Postcondition: only current selection state remains, and Preview availability never gates processing
+```
+
+New selections always reset the previous Preview and parameters. Preview resources end on replacement, successful handoff or page teardown. A recoverable processing error may retain the current selection and its Preview through US-05.
+
+### US-02 — Set maximum dimensions
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    Note over U,S: Precondition: SCR-01 has an eligible selection and defaults to JPEG with empty bounds
+    U->>UI: Set width, height, both or neither
+    U->>UI: Request processing
+    alt Supplied bounds are not positive whole pixels
+        UI-->>U: Explain invalid bounds and retain input for correction
+    else Local parameters are eligible
+        UI->>UI: Lock controls and mark the current operation
+        UI->>S: Submit the original and supplied parameters
+        Note over UI,S: Apply US-05 validation and resource ownership to this same request
+        alt Server rejects input or processing fails
+            S-->>UI: Explain the failure
+            UI-->>U: Restore controls and retain input through US-05
+        else Validation and processing succeed
+            S->>S: Normalize orientation before calculating bounds
+            S->>S: Choose the largest proportional scale at most one fitting every supplied bound
+            alt A supplied bound requires reduction
+                S->>S: Round each scaled dimension to nearest pixel with halves up and minimum one
+                Note over S: Keep the whole image within supplied bounds and original oriented dimensions
+                Note over S: Fit 2400x1200 to width 1200 as 1200x600
+                Note over S: Fit 2400x1200 to height 300 or both bounds as 600x300
+                Note over S: Fit 1000x333 to width 500 as 500x167
+            else Bounds are absent or ineffective
+                S->>S: Keep original oriented dimensions and still normalize output
+                Note over S: Keep 800x600 unchanged for maximum width 1600
+            end
+            S->>S: Encode the normalized output through US-03
+            S-->>UI: Return the result for download and reset through US-04
+        end
+    end
+    Note over U,S: Postcondition: success preserves the whole oriented image without enlargement or extra reduction
+```
+
+The rounding rule is the only permitted aspect-ratio deviation, including the one-pixel minimum. Dimensions describe the downloaded file, not a result panel. Backend validation also applies to requests bypassing the form, as shown in US-05.
+
+### US-03 — Choose the output format
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    Note over U,S: Precondition: SCR-01 has an eligible selection and JPEG initially selected for every input
+    U->>UI: Keep JPEG or choose PNG or WebP
+    alt JPEG is selected, including the default
+        UI-->>U: Warn that any transparency becomes white
+    else PNG or WebP is selected
+        Note over U,UI: Preserve transparency in the chosen output
+    end
+    UI-->>U: Explain HEIC primary-image selection, omitted extra images and ordinary 8-bit HDR output
+    Note over U,UI: Require no advance inspection, upload or extra confirmation for these notices
+    U->>UI: Submit the selected format, including the original format
+    UI->>UI: Lock controls and mark the current operation
+    UI->>S: Submit the original and transformation parameters
+    Note over UI,S: Apply US-05 validation and cleanup to this same request
+    alt Input is rejected or decoding, color processing or encoding fails
+        S-->>UI: Explain the failure without a successful result
+        UI-->>U: Retain input and restore controls through US-05
+    else Static JPEG, PNG, WebP or HEIC input is accepted and processing succeeds
+        opt Input is HEIC
+            S->>S: Select the designated primary static image and omit additional images
+            S->>S: Produce ordinary 8-bit pixels without promising original HDR appearance
+        end
+        S->>S: Normalize visible orientation once and apply US-02 bounds
+        alt Output is JPEG
+            S->>S: Composite partial and full transparency onto white
+        else Output is PNG or WebP
+            S->>S: Retain transparency
+        end
+        S->>S: Preserve correct color interpretation with a profile compatible with resulting pixels
+        S->>S: Remove GPS, camera, EXIF, XMP and textual service metadata after orientation
+        S->>S: Encode a decodable file in the selected format
+        S-->>UI: Return the result for download and reset through US-04
+    end
+    Note over U,S: Postcondition: output has the chosen format with no smaller-file or byte-identity guarantee
+```
+
+The format flow and dimension flow are views of one pipeline, not successive requests or repeated normalization passes. Support covers all twelve input/output combinations. HEIC primary-image selection is not first-frame selection; extra static images alone do not imply animation. Color-model changes require the compatible transformation described in §4. The HEIC/color feasibility gate in §11 remains open.
+
+### US-04 — Download the current result and reset
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    Note over U,S: Precondition: SCR-01 awaits the current operation with controls locked
+    S-->>UI: Deliver the result response or a transfer failure
+    UI->>UI: Check that completion belongs to the current unconsumed operation
+    alt Completion is stale or already consumed
+        UI->>UI: Discard obsolete result resources without downloading or changing the form
+    else Current response fails or cannot be received completely
+        UI->>UI: Release failed result resources
+        UI-->>U: Retain current input and restore controls through US-05
+    else Complete successful result belongs to the current pending operation
+        UI->>UI: Consume the operation and initiate one native download with a matching filename extension
+        Note over U,UI: Leave the original untouched and hand off to the browser without waiting for disk-save confirmation
+        UI->>UI: Clear selected file, native file input, Preview, result and errors after handoff
+        UI->>UI: Release obsolete Preview resources immediately and reset empty bounds and JPEG
+        UI-->>U: Show the initial form with only file selection enabled and no result panel or download control
+        UI->>UI: Release download resources as soon as browser handoff no longer needs them
+        Note over UI: Keep download cleanup independent of form reset so the initiated download is not interrupted
+        U->>UI: Select the next original through US-01, including the same file again
+    end
+    opt Page closes or reloads at any point
+        UI->>UI: Invalidate pending work and release page-owned resources
+        Note over U,UI: Reopening starts with the initial form and restores neither input nor result
+    end
+    Note over U,S: Postcondition: no prior result remains available for another application download or lookup
+```
+
+The native download action is a browser facility inside the UI boundary, not an external service. The final closure branch applies throughout the operation, not only after completion. Cleanup follows §8 ownership: server temporaries end when no longer needed and response output ends on transfer completion or failure. A verified browser handoff boundary is still required by §11; neither an arbitrary delay nor a disk-save event is assumed.
+
+### US-05 — Recover from rejected processing
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant C as <client>
+    participant S as <service>
+    Note over U,S: Precondition: SCR-01 has input to submit, or a client bypasses form restrictions
+    alt Submission comes from the form
+        U->>UI: Request processing
+        UI->>UI: Lock file selection, parameters and repeat submission
+        UI-->>U: Show truthful busy state without fabricated percentages
+        UI->>S: Submit the original and supplied parameters
+    else Submission bypasses the form
+        C->>S: Submit untrusted input directly
+    end
+    Note over C,S: Return outcomes to the initiating caller, never to another operation
+    S->>S: Bound multipart parsing and validate file presence and supplied parameters
+    alt File or all parameters are missing, dimensions invalid or output unsupported
+        S->>S: Reject the attempt with an understandable reason and no successful result
+    else Parameters are accepted
+        S->>S: Treat empty bounds as absent and default omitted format to JPEG only with supplied dimensions
+        S->>S: Validate actual bytes and inspect supported content, animation and selected-image dimensions
+        Note over S: Allow exactly 20000000 bytes and 40000000 decoded pixels of the selected static image
+        Note over S: Check limits before expensive decoding and preserve decoder safety protections
+        alt Input is empty, corrupted, unsupported, animated or above either limit
+            S->>S: Reject the input with an understandable reason and no successful result
+        else Input passes initial checks
+            S->>S: Decode the selected static image and recheck dimensions when decoding can change them
+            Note over S: Use HEIC primary-image rules rather than treating extra static images as animation
+            alt Decoding, rechecked limits, transformation or encoding fails
+                S->>S: Record a recoverable failure without a successful result
+            else Processing succeeds
+                S->>S: Prepare encoded output owned by the response
+            end
+        end
+    end
+    S->>S: Release upload handles, decoded images and intermediates when processing no longer needs them
+    alt Page closes, request parsing is interrupted or caller disconnects
+        Note over UI,S: Invalidate browser work without restoration and close partial uploads on parser failure
+        S->>S: Retain ownership of native work until it finishes and release remaining operation resources
+    else Caller remains available
+        alt Caller used the form
+            S-->>UI: Return the result or explain the rejection or processing failure
+            alt Recoverable validation, processing or transfer error
+                UI->>UI: Release failed result resources without restoring a prior result
+                UI-->>U: Restore controls with the current file, parameters and Preview retained
+                U->>UI: Correct parameters and retry, or replace the file through US-01
+            else Complete successful result
+                Note over U,UI: Continue this operation through US-04 download and reset
+            end
+        else Caller bypassed the form
+            S-->>C: Return only this operation's result or understandable failure
+        end
+        S->>S: Release response-owned output on response completion or failure
+    end
+    Note over U,S: Postcondition: no server original or result remains for future retrieval after its lifecycle ends
+```
+
+Interruption can occur during parsing, decoding or transfer. The cleanup branch is a lifecycle obligation across those phases, not a requirement that parsing or native work finishes before a disconnect is detected. Native work must retain resource ownership until it actually finishes. Retry means a new user submission, not a server retry policy. A direct caller receives no UI state or unrelated operation's image.
+
+### Runtime coverage and review
+
+All five flow descriptions were confirmed by the owner at medium depth before this documentation update. No decisions were edited, dropped or saved as open questions during that confirmation, so the edits-log is empty. Size M and route standard come from `.size` and `.route`.
+
+| Requirement | Runtime coverage | Branch or explicit non-runtime boundary |
+|---|---|---|
+| US-01 | US-01 | Selection, optional Preview and replacement |
+| US-02 | US-02 | Independent bounds and proportional resizing |
+| US-03 | US-03 | Output choice and normalization |
+| US-04 | US-04 | Current-operation download and reset |
+| US-05 | US-05 | Rejection, retry and interruption |
+| AC-01 | US-01 | Initial controls, empty/oversized rejection, inclusive byte limit and immediate eligibility |
+| AC-02 | US-01 | Local whole-image oriented Preview or silent omission without blocking processing |
+| AC-03 | US-01, US-04 | Reset on every selection and suppress stale Preview, form restoration and duplicate download |
+| AC-04 | US-02 | Exact width-only, height-only and combined-bound examples |
+| AC-05 | US-02 | Largest fitting scale, no enlargement, whole image, halves-up rounding and minimum one pixel |
+| AC-06 | US-02, US-03 | Ineffective bounds and same-format requests still normalize output |
+| AC-07 | US-03 | Four static input formats, three output formats, default JPEG and decodable output |
+| AC-08 | US-03 | Unconditional pre-submit JPEG warning, white compositing or retained transparency |
+| AC-09 | US-01, US-02, US-03 | Correct Preview/output orientation, oriented bounds, compatible color interpretation and metadata removal |
+| AC-10 | US-03, US-05 | General pre-submit HEIC notice, designated primary static image and ordinary 8-bit output |
+| AC-11 | US-02, US-05 | Invalid/missing parameters, bypassed UI, absent bounds and dimensions-only JPEG fallback |
+| AC-12 | US-01, US-05 | Local byte rejection and independent server content, animation, byte and pixel checks with inclusive limits |
+| AC-13 | US-04 | Exactly one complete download, matching extension, untouched original, safe reset and same-file reselection |
+| AC-14 | US-04, US-05 | Non-runtime: no history, lookup or retrieval interface exists by §5/§8 design, so no retrieval request flow is invented. Currentness and caller isolation enforce the runtime side. |
+| AC-15 | US-04, US-05 | Locked controls, truthful busy state, recoverable retry, obsolete completion suppression and no restoration |
+| AC-16 | US-01, US-04, US-05 | Local Preview, retained input on recoverable failure, safe handoff cleanup and release on success, failure or interruption |
+
+**Participant mapping and persistence.** `<user>` maps to the owner, `<ui>` to Browser UI and `<service>` to Application in §5. `<client>` represents a direct caller of the same Application boundary, not an additional building block. Native browser facilities remain inside `<ui>`. No new module, datastore, persistent entity, column, index, queue or external service is introduced. Request-scoped temporary uploads and buffers carry cleanup obligations, not datastore persist notes. The existing overview diagram is preserved verbatim, including its original participant names; generic names apply to the five new diagrams.
+
+**Outstanding design evidence.** The HEIC/color and resource/download feasibility gates in §11 remain open. These diagrams specify agreed behavior and do not prove runtime feasibility or permit progression to tasks before those gates close. No new ADR decision is introduced.
+
 ## 7. Deployment view
 
 Reuse root `mise run dev` for the two development servers and the existing single Docker application image for the local built application. The browser is a client of that image, not another production service. The runtime stays non-root, with built frontend assets and Python dependencies; no Node.js, Ruby or development tools are added to it.
