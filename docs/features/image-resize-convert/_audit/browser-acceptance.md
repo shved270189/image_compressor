@@ -48,3 +48,8 @@ The owner also selected and processed the same image twice consecutively and
 explicitly confirmed that both downloads completed and the form cleared after
 each operation. This records a passed repeated-selection check; the follow-up
 did not identify which browser was used, so no all-browser coverage is inferred.
+
+The owner confirmed that submitting an image and immediately reloading opens an
+empty form. Exact browser and whether server processing was still pending at
+reload were not specified; this proves the observed empty-form outcome, not the
+complete interruption matrix or suppression of every late download.
