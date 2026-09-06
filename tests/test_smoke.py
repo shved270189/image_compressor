@@ -2,11 +2,22 @@ import asyncio
 import io
 import os
 import re
+from pathlib import Path
 
 import httpx
 from PIL import Image
 
 from backend.main import app
+
+HEIC_NOTICE = (
+    "HEIC: only the primary image is used; extra images are omitted. "
+    "HDR becomes ordinary 8-bit output and may not retain its original appearance."
+)
+
+
+def test_heic_notice_copy():
+    source = Path("frontend/src/App.tsx").read_text()
+    assert HEIC_NOTICE in source
 
 
 def test_skeleton():

@@ -16,6 +16,8 @@ application, not the previous feasibility probe.
 | Firefox 155.0 / WebKit 26.5 automation | Failure/retry, stale/duplicate, closure, both widths, reduced motion, keyboard | PASS; engine evidence, with native Safari server-error retry checked separately |
 | Real iPhone Safari and iOS Firefox | Download and form reset | PASS, owner-reported; iPhone Safari network failure/retry also confirmed. Other follow-ups did not identify a browser |
 | Project owner | Readability of labels, fields and buttons on phone and desktop | ACCEPTED by owner on 2026-09-06 |
+| Desktop Chrome, existing Playwright CLI | AC-10 HEIC notice on empty form before any upload | PASS; exact screens.md copy including HDR appearance disclaimer |
+| Desktop Chrome, existing Playwright CLI | AC-02/AC-09 Preview vs download orientation on `oriented-exif6.jpg` | PASS; stored 12×8 EXIF 6; Preview natural/display 8×12; width 4 downloads 4×6 JPEG; Pillow top row cyan, bottom red; EXIF stripped |
 
 Chrome test scripts were run through the existing Playwright CLI in
 `/tmp/image-implementation-fixtures`; no browser test framework was added.

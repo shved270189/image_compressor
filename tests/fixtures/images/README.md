@@ -13,6 +13,9 @@ Immutable decoder controls copied from the pinned, hash-verified feasibility fix
 | guitar_cw90.hif | `f0d5e88be07b9d70a3715218ca612ccf45b126e5b4b42172dce14a62d2099932` |
 | starfield_animation.heic | `fbf31cd9aa6fc4c997d7eb2ea05541627bf3dbcb4115b7d453f63dcd1ec4fb26` |
 | zPug_3.heic | `daf1515c651e15968ad6ec142e443759156fee76c65715e4f5713cf1ad072774` |
+| oriented-exif6.jpg | `5bf18f02508f59dc92ce04a4988719103911ab8b438032c1d6c11d5a11d3203e` |
+
+`oriented-exif6.jpg` is a synthetic 12×8 JPEG with EXIF orientation 6 (left strip cyan, remainder red). Pillow/libjpeg decode it to 8×12 with the cyan strip on top. It is a browser Preview/download orientation control, not a camera file.
 
 ## Generated track controls
 

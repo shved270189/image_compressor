@@ -186,7 +186,7 @@ export default function App() {
             </fieldset>
             <div className="mt-4 space-y-2 text-xs leading-relaxed text-muted">
               {format === 'jpeg' && <p>If the image has transparency, JPEG turns it white.</p>}
-              <p>HEIC: only the primary image is kept. Extra images are omitted; HDR becomes ordinary 8-bit output.</p>
+              <p>HEIC: only the primary image is used; extra images are omitted. HDR becomes ordinary 8-bit output and may not retain its original appearance.</p>
             </div>
             <button type="submit" disabled={!file || busy} className="mt-7 w-full rounded-xl bg-accent px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-ink disabled:cursor-not-allowed disabled:opacity-40">{busy ? 'Processing…' : 'Process image'}</button>
             <p role="status" className="mt-3 text-center text-xs text-muted">{busy ? 'Processing your image…' : 'Your result downloads automatically.'}</p>
