@@ -2,7 +2,13 @@
 name = "image-compressor"
 version = "0.1.0"
 requires-python = ">=3.14,<3.15"
-dependencies = ["fastapi", "uvicorn", "pillow"]
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pillow",
+    "python-multipart==0.0.22",
+    "starlette==1.6.0",
+]
 
 [dependency-groups]
 dev = ["pytest", "httpx", "ruff"]

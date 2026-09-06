@@ -4,7 +4,7 @@
 
 | # | Task | Layer | Owner | Estimate | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| T1 | [Bound multipart parsing](./bound-multipart-parsing.md) | ports | Tech Lead | 6h | — | todo |
+| T1 | [Bound multipart parsing](./bound-multipart-parsing.md) | ports | Tech Lead | 6h | — | done |
 | T2 | [Decode supported static images](./decode-supported-static-images.md) | domain | Tech Lead | 6h | — | todo |
 | T3 | [Classify HEIF presentation timelines](./classify-heif-presentation-timelines.md) | domain | Tech Lead | 6h | T2 | todo |
 | T4 | [Handle fragmented HEIF timelines](./handle-fragmented-heif-timelines.md) | domain | Tech Lead | 6h | T3 | todo |
@@ -21,3 +21,7 @@
 **Total:** 13 tasks, 78 hours, 9.75 person-days at 8 hours/day. Estimates exclude waiting for device access and owner/security sign-off.
 
 Tech Lead owns delivery; Security Lead accepts T12 security review and Project owner accepts T11 readable contrast. Tests and review are part of each estimate.
+
+## Implementation evidence
+
+- T1: RED missing `parse_image_request`; GREEN 41 parser/smoke tests. Frontend build/typecheck, Ruff and ESLint passed; application image build and live-container smoke passed. Mixed-case media type regression added after independent review. Parser diagnostic confidentiality remains assigned to T8/T12 before route exposure.

@@ -39,7 +39,15 @@ paths:
         of the filename or declared media type. Accept at most 20,000,000 file
         bytes and 40,000,000 decoded pixels, including equality. The byte limit
         applies to the file, not the multipart envelope. Bound multipart parsing
-        and inspect content, animation and selected-image dimensions before
+        to 20,065,536 total body bytes, 16,384 cumulative multipart header-name
+        and header-value bytes, and 1,024 bytes per text field (413 on excess).
+        Accept one file part named file and at most the three named text fields;
+        reject duplicate, unexpected or incorrectly typed parts with 422.
+        Require a non-empty multipart boundary of at most 70 bytes and a closing
+        boundary; malformed or incomplete multipart returns 400. Dimension text
+        is empty or ASCII decimal digits representing a positive integer; its
+        transport length limit is not a numeric maximum dimension.
+        Inspect content, animation and selected-image dimensions before
         expensive decoding; preserve decoder safety protections and recheck
         dimensions if decoding can change them. Reject empty, corrupted,
         unsupported and animated input. For HEIC, select the designated primary
