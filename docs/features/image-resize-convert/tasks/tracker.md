@@ -41,3 +41,5 @@ Tech Lead owns delivery; Security Lead accepts T12 security review and Project o
 - T11: Chrome implemented-flow checks pass, including full-body interruption, stale work, actual pending-page closure, HEIC output formats, keyboard and both widths. Native Safari/Firefox complete downloads pass. Full native-engine matrices, real iPhone Safari and owner contrast review remain open; see `_audit/browser-acceptance.md`.
 - T12: 180 host and 180 Linux tests plus live non-root container smoke pass. Independent review defects fixed in `08698b0`. Security Lead acceptance remains open; see `_audit/security-container-acceptance.md`.
 - T13: README and architecture map prepared against actual implementation/evidence, explicitly documenting pending acceptance. Final acceptance depends on T11/T12; no completed browser/security sign-off is claimed.
+
+- T11 owner update (2026-09-06): download/reset confirmed on iOS and desktop Safari/Firefox; owner accepted phone/desktop label, field and button readability. The stuck-processing report was explicitly withdrawn. Remaining native-engine failure/retry/interruption matrix stays in review; no regression fix was needed.

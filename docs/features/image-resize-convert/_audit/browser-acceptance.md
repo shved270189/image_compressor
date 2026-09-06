@@ -14,8 +14,8 @@ application, not the previous feasibility probe.
 | Native macOS Safari 26.6.2 | PNG selection/preview, default JPEG processing, automatic download/reset/focus | PASS; Downloads reports result.jpg 637 bytes; Pillow decodes 32x16 JPEG |
 | Native macOS Firefox 155.0 | PNG selection/preview, width16, automatic JPEG download/reset | PASS; Downloads reports result(1).jpg 633 bytes; Pillow decodes 16x8 JPEG |
 | Native Safari/Firefox | Complete failure/retry, stale/duplicate, closure, both widths and reduced-motion matrix | OPEN; happy path alone is insufficient |
-| Real iPhone Safari | Implemented download/reset/retry/closure matrix | OPEN; physical device unavailable to this session |
-| Project owner | Readable contrast of all labels/errors/actions | OPEN; no owner acceptance received |
+| Real iPhone Safari and iOS Firefox | Download and form reset | PASS, owner-reported on the implemented LAN application; retry/closure matrix remains open |
+| Project owner | Readability of labels, fields and buttons on phone and desktop | ACCEPTED by owner on 2026-09-06 |
 
 Chrome test scripts were run through the existing Playwright CLI in
 `/tmp/image-implementation-fixtures`; no browser test framework was added.
@@ -29,3 +29,16 @@ The pending matrix requires selecting the same image twice, checking a corrupt
 input error and replacement, closing/reloading during processing, and opening the
 saved output. Owner review must include the initial, selected and error states.
 Android remains deferred. Desktop viewport emulation is not real-device evidence.
+
+## Owner verification — 2026-09-06
+
+The owner tested the implemented application over LAN in iOS Safari, desktop
+Safari, iOS Firefox and desktop Firefox. The initial report of a stuck Processing
+state was explicitly withdrawn: everything worked correctly. Download and form
+reset are therefore recorded as owner-confirmed. The owner subsequently confirmed
+that labels, fields and buttons are readable on phone and desktop.
+
+This closes real-device happy-path verification and owner readability acceptance.
+It does not assert unreported failure/retry, repeated-selection, interruption or
+reduced-motion checks on those browsers. The remaining matrix and Security Lead
+acceptance stay open; no application code was changed for the withdrawn report.

@@ -33,8 +33,9 @@ Multipart transport also limits the body to 20,065,536 bytes, cumulative part
 header names/values to 16,384 bytes and each text field to 1,024 bytes.
 
 Implementation checks are recorded in the [task tracker](docs/features/image-resize-convert/tasks/tracker.md).
-Full browser acceptance, real iPhone Safari, owner contrast approval and Security
-Lead acceptance remain open; prior feasibility probes do not close those gates.
+The owner confirmed download/reset in iOS and desktop Safari/Firefox and accepted
+phone/desktop readability. Remaining browser failure/retry/interruption checks and
+Security Lead acceptance remain open; prior feasibility probes do not close those gates.
 
 ## Local development
 
