@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Download feasibility probe</title>
+<style>
+body { font: 16px system-ui; max-width: 48rem; margin: auto; padding: 1rem; }
+label, button { display: block; margin: .75rem 0; }
+input, select, button { font: inherit; max-width: 100%; }
+img { max-width: 100%; max-height: 12rem; object-fit: contain; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+<h1>Download feasibility probe</h1>
+<p>Throwaway diagnostic, not the image converter. Selected files stay local.
+Every successful request returns the same synthetic 1024 × 1024 PNG.</p>
+<p>Run each release mode. Verify the saved PNG separately; the event log cannot
+confirm a browser download. “Retain” is a positive control, not an accepted cleanup policy.</p>
+<label>Release mode <select id="release">
+<option value="immediate">Immediately after click</option>
+<option value="task">MessageChannel task</option>
+<option value="retain">Retain until explicit diagnostic release</option>
+</select></label>
+<label>Response scenario <select id="scenario">
+<option value="success">Success</option><option value="failure">HTTP failure</option>
+<option value="slow">Delayed response (8 seconds)</option>
+<option value="truncated">Truncated response</option>
+</select></label>
+<form id="form">
+<img id="preview" alt="Selected image preview" hidden>
+<label>Select an image <input id="file" type="file"></label>
+<button id="sample" type="button">Use synthetic selection</button>
+<fieldset id="parameters" disabled>
+<label>Maximum width <input id="width" type="number" min="1"></label>
+<label>Output format <select id="format"><option value="jpeg">JPEG</option></select></label>
+<p>Probe response is always PNG; these fields only exercise reset and retention.</p>
+<button id="submit">Process probe</button>
+</fieldset>
+</form>
+<p id="status" role="status">Empty</p>
+<button id="invalidate">Invalidate pending operation (diagnostic)</button>
+<button id="replay">Replay obsolete completion (diagnostic)</button>
+<button id="cleanup">Release retained URLs (diagnostic)</button>
+<label>Verify downloaded PNG locally <input id="verify" type="file" accept="image/png"></label>
+<pre id="log"></pre>
+<script>
+const element = (id) => document.getElementById(id);
+const form = element('form');
+let selected = null;
+let previewURL = null;
+let sequence = 0;
+let current = null;
+let lastCompleted = null;
+let request = null;
+const run = Date.now().toString(36);
+let expectedDownload = '';
+const resultURLs = new Set();
+const events = [];
+function log(event) {
+  events.push(event);
+  element('log').textContent = JSON.stringify({ browser: navigator.userAgent, events }, null, 2);
+}
+function releasePreview() {
+  if (previewURL) URL.revokeObjectURL(previewURL);
+  previewURL = null;
+  element('preview').removeAttribute('src');
+  element('preview').hidden = true;
+}
+function controls(busy = false) {
+  element('file').disabled = busy;
+  element('sample').disabled = busy;
+  element('release').disabled = busy;
+  element('scenario').disabled = busy;
+  element('parameters').disabled = busy || !selected;
+}
+function reset() {
+  releasePreview();
+  selected = null;
+  form.reset();
+  controls();
+  element('status').textContent = 'Empty';
+}
+function select(file) {
+  sequence++;
+  current = null;
+  releasePreview();
+  selected = null;
+  element('width').value = '';
+  element('format').value = 'jpeg';
+  controls();
+  element('status').textContent = 'Empty';
+  if (!file || !file.size || file.size > 20000000) return;
+  selected = file;
+  previewURL = URL.createObjectURL(file);
+  const url = previewURL;
+  element('preview').onload = () => {
+    if (previewURL === url) element('preview').hidden = false;
+  };
+  element('preview').onerror = () => {
+    if (previewURL === url) releasePreview();
+  };
+  element('preview').src = url;
+  controls();
+  element('status').textContent = 'Ready';
+  log('selection ready; parameters reset');
+}
+function release(url) {
+  URL.revokeObjectURL(url);
+  resultURLs.delete(url);
+  log('result URL released');
+}
+function complete(id, blob, mode) {
+  if (id !== current || current === null) { log('obsolete completion ignored'); return; }
+  current = null;
+  lastCompleted = id;
+  const url = URL.createObjectURL(blob);
+  resultURLs.add(url);
+  const link = document.createElement('a');
+  link.href = url;
+  expectedDownload = `probe-${mode}-${run}-${id}`;
+  link.download = `${expectedDownload}.png`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  log(`download click ${expectedDownload}.png; ${blob.size} bytes`);
+  if (mode === 'immediate') release(url);
+  if (mode === 'task') {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      release(url);
+      channel.port1.close();
+      channel.port2.close();
+    };
+    channel.port2.postMessage(null);
+  }
+  reset();
+  log('form reset; Preview URL released');
+}
+element('file').onchange = (event) => select(event.target.files[0]);
+element('sample').onclick = () => select(new File(['synthetic selection'], 'sample.txt'));
+form.onsubmit = async (event) => {
+  event.preventDefault();
+  if (current !== null || !selected) return;
+  const id = ++sequence;
+  current = id;
+  const mode = element('release').value;
+  request = new AbortController();
+  controls(true);
+  element('status').textContent = 'Processing';
+  log(`request ${id}; controls locked`);
+  try {
+    const response = await fetch(`/result?scenario=${element('scenario').value}`, {
+      method: 'POST', signal: request.signal,
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    complete(id, blob, mode);
+  } catch (error) {
+    if (current !== id) return;
+    current = null;
+    controls();
+    element('status').textContent = `Retry: ${error.message}`;
+    log('failure; selection and parameters retained');
+  }
+};
+element('invalidate').onclick = () => { current = null; sequence++; reset(); log('invalidated'); };
+element('replay').onclick = () => complete(lastCompleted, new Blob(['obsolete']), 'immediate');
+element('cleanup').onclick = () => { for (const url of resultURLs) release(url); };
+element('verify').onchange = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const matchesOperation = expectedDownload && (file.name === `${expectedDownload}.png`
+    || file.name.startsWith(`${expectedDownload}(`) || file.name.startsWith(`${expectedDownload} `));
+  const expected = new Uint8Array(await (await fetch('/fixture.png')).arrayBuffer());
+  const actual = new Uint8Array(await file.arrayBuffer());
+  const equal = actual.length === expected.length && actual.every((byte, i) => byte === expected[i]);
+  const url = URL.createObjectURL(file);
+  const image = new Image();
+  try {
+    image.src = url;
+    await image.decode();
+    log(`verification ${matchesOperation && equal && image.width === 1024 && image.height === 1024 ? 'PASS' : 'FAIL'}; operation=${expectedDownload}; bytes=${actual.length}; dimensions=${image.width}x${image.height}`);
+  } catch { log('verification FAIL; cannot decode'); }
+  finally { URL.revokeObjectURL(url); element('verify').value = ''; }
+};
+addEventListener('pagehide', () => {
+  current = null;
+  request?.abort();
+  releasePreview();
+  for (const url of resultURLs) release(url);
+});
+log('fresh page; no restored input or result');
+</script>
+</html>

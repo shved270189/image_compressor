@@ -9,7 +9,7 @@ target_surfaces: [web-frontend, backend-service]
 
 # Software Architecture Document — image-resize-convert
 
-**Design review — 2026-09-06.** All twelve sections were approved through the medium-depth design walk. An independent clean-context critic reviewed the written SAD and four ADRs and returned `NO_CONTESTED_DECISIONS`. All three Mermaid blocks rendered successfully with `mmdc`; structural checks confirmed the section count, declared surfaces, Accepted ADRs, closed ADR index, local links and absence of template placeholders. All six NFR targets match the spec verbatim. This review covers architecture documents only; the runtime gates in §11 remain open.
+**Design review — 2026-09-06.** All twelve sections were approved through the medium-depth design walk. An independent clean-context critic reviewed the written SAD and four ADRs and returned `NO_CONTESTED_DECISIONS`. All three Mermaid blocks rendered successfully with `mmdc`; structural checks confirmed the section count, declared surfaces, Accepted ADRs, closed ADR index, local links and absence of template placeholders. All six NFR targets match the spec verbatim. This review covers architecture documents only; the separate runtime feasibility closure is recorded in §11.
 
 ## 1. Introduction and goals
 
@@ -31,7 +31,7 @@ target_surfaces: [web-frontend, backend-service]
 
 **Decision override:** Use four feature ADRs rather than the skill's M-size guideline of 5–12. The project owner explicitly approved four substantive records with references to existing foundation decisions, avoiding duplicate stack, SPA and storage ADRs.
 
-The owner approved depth medium, size M and route standard. Documents remain English, matching this feature folder; the canonical domain terms remain unchanged. Approval of architectural choices does not claim that the outstanding runtime checks in §11 have passed.
+The owner approved depth medium, size M and route standard. Documents remain English, matching this feature folder; the canonical domain terms remain unchanged. Architecture approval and the runtime feasibility evidence in §11 are distinct; neither claims implementation acceptance.
 
 ## 2. Constraints
 
@@ -79,7 +79,7 @@ The owner confirmed this context in prose: one local application and no external
 
 3. **Preserve compatible color interpretation.** Keep a compatible color profile rather than converting every image to sRGB. When the pixel color model changes, perform the required color transformation with Pillow ImageCms and retain only a profile matching the resulting pixels. Never relabel transformed pixels with an incompatible source profile. HEIC NCLX-only color information and PNG color information without ICC require the feasibility evidence in §11; silently discarding that information is not the chosen policy. Remove GPS, camera, EXIF, XMP and textual service metadata after orientation has been applied. JPEG composites transparency onto white; PNG and WebP retain it. [ADR 0003](./adr/0003-preserve-compatible-color-profiles.md) records this choice.
 
-4. **Return the result within the submitted operation.** Send one processing request and receive its complete binary result. The browser uses a Blob URL and an automatic download action only for the current pending operation. Clear the form after handoff while keeping download cleanup independent of form state. Failure retains the current input for retry; obsolete completions never download or restore state. Server work remains request-scoped without jobs or retrieval IDs. [ADR 0004](./adr/0004-return-results-within-the-current-operation.md) defines ownership and the outstanding handoff proof.
+4. **Return the result within the submitted operation.** Send one processing request and receive its complete binary result. The browser uses a Blob URL and an automatic download action only for the current pending operation. Clear the form after handoff while keeping download cleanup independent of form state. Failure retains the current input for retry; obsolete completions never download or restore state. Server work remains request-scoped without jobs or retrieval IDs. [ADR 0004](./adr/0004-return-results-within-the-current-operation.md) defines ownership; the handoff proof is recorded in §11.
 
 The form defaults to JPEG on every selection and reset. Either dimension is optional. A supplied format counts as a transformation parameter; supplied dimensions with omitted format use JPEG, while omission of all parameters remains an error. Encoding adds no quality control or smaller-file guarantee. The processing contract's paths, field names, error schema and status codes belong to `sdd:api`, not this architectural decision.
 
@@ -402,7 +402,7 @@ All five flow descriptions were confirmed by the owner at medium depth before th
 
 **Participant mapping and persistence.** `<user>` maps to the owner, `<ui>` to Browser UI and `<service>` to Application in §5. `<client>` represents a direct caller of the same Application boundary, not an additional building block. Native browser facilities remain inside `<ui>`. No new module, datastore, persistent entity, column, index, queue or external service is introduced. Request-scoped temporary uploads and buffers carry cleanup obligations, not datastore persist notes. The existing overview diagram is preserved verbatim, including its original participant names; generic names apply to the five new diagrams.
 
-**Outstanding design evidence.** The HEIC/color and resource/download feasibility gates in §11 remain open. These diagrams specify agreed behavior and do not prove runtime feasibility or permit progression to tasks before those gates close. No new ADR decision is introduced.
+**Feasibility evidence.** Both runtime mechanism gates are closed by the separate experiments in §11. These diagrams specify agreed behavior; complete implementation acceptance remains required. No new ADR decision is introduced.
 
 ## 7. Deployment view
 
@@ -474,7 +474,7 @@ Targets below come from [spec.md §6](./spec.md#6-non-functional-requirements). 
 
 - **When:** Власник картинки completes, retries or repeats the flow in the browser.
 - **Then:** Form concurrency is “At most one submitted processing operation from the current form; file selection and all transformation parameter controls disabled while processing”. Accessibility requires “Every interactive control is keyboard-usable with visible focus; every label, error and action passes the project owner's manual readable-contrast review; with reduced motion, zero decorative animations and zero loss of functionality”. Responsive UI requires “Complete flow at viewport widths 360 and 1280 CSS pixels with no horizontal page overflow”.
-- **How verify:** Exercise the complete keyboard flow, owner contrast acceptance and reduced-motion review at both widths. Verify disabled controls and duplicate-submit suppression, silent unavailable Preview, conditional JPEG warning and general HEIC notice, one complete download per success, a clean form with no result controls, same-file reselection, consecutive conversions, retained input after recoverable failure and ignored stale completions. The owner selected desktop Chrome, Safari and Firefox, iPhone Safari and Android Chrome for browser verification. Viewport emulation alone does not prove mobile download behavior.
+- **How verify:** Exercise the complete keyboard flow, owner contrast acceptance and reduced-motion review at both widths. Verify disabled controls and duplicate-submit suppression, silent unavailable Preview, conditional JPEG warning and general HEIC notice, one complete download per success, a clean form with no result controls, same-file reselection, consecutive conversions, retained input after recoverable failure and ignored stale completions. The current browser matrix is desktop Chrome, Safari and Firefox, plus iPhone Safari. On 2026-09-06 the owner deferred Android Chrome because no Android device is available; Android is excluded from the current gate, without claiming compatibility. The owner additionally reported successful download smoke checks in iOS Chrome and Firefox. Viewport emulation alone does not prove mobile download behavior.
 
 **AC traceability.**
 
@@ -497,7 +497,13 @@ Feature implementation uses existing tests before introducing new test files or 
 | Untrusted decoding and temporary uploads | High | Before implementation acceptance, review byte/pixel enforcement before expensive decoding, partial multipart cleanup, decoder protections and confidential error/log behavior. Include requests bypassing the form. | Security Lead |
 | Foundation smoke tests do not prove feature behavior | Medium | Before implementation acceptance, retain health/assets/API-404 smoke coverage and add the feature evidence in §10. Do not count the scaffold's earlier browser/container checks as image-processing evidence. | Tech Lead |
 
-**Readiness.** Architectural choices are approved; HEIC runtime behavior and the complete resource/download lifecycle are not yet verified. Both pre-tasks gates remain open. Sequences and contracts may describe the agreed behavior, but tasks must not proceed until evidence closes those gates. A failed check must be resolved without silently removing accepted HEIC, color, privacy or automatic-download behavior.
+**Runtime evidence — 2026-09-06.** The [pre-tasks feasibility audit](./_audit/pre-tasks-feasibility.md) closes both mechanism gates. macOS/Linux color probes each pass 9 cases: primary selection, orientation, alpha, compatible ICC, matching NCLX/PNG profiles and HDR-to-SDR transformation through bundled LittleCMS and ImageCms. Timing probes each pass 21 assertions, detecting a real sequence even with spoofed brands while preserving static items and analytic non-timed galleries. Server probes each pass 24 assertions plus two asserted baseline gaps; guarded parsing and worker-owned cleanup resolve those gaps, including actual socket interruption during Pillow work.
+
+Browser handoff is verified with immediate Blob URL revocation after native link click and form reset: complete PNGs on desktop Chrome, Safari and Firefox; owner-reported downloads in all three modes on iOS Safari, Chrome and Firefox. Chrome additionally passes 55 assertions including active-URL cleanup and a completed download after actual page closure. Android is deferred by the owner. This establishes the release boundary for tested environments, not a universal browser/version guarantee.
+
+**Readiness.** Both pre-tasks feasibility gates are closed; architectural choices remain approved. The next stage is `sdd:tasks`, after the owner's requested `/clear` reminder. No further owner device check or repeated design walkthrough is required. The probes establish viable mechanisms, not finished production processing. Full §10 feature tests and security review retain their implementation-acceptance deadline.
+
+**Required implementation carry-forward.** Complete HEIF edit-list/composition/fragmented timeline handling, preserving non-timed galleries; the diagnostic's `NEEDS_TIMELINE` is never a production accept/reject fallback. Cover supported decoder/color combinations and validate dimensions before and after decode. Preserve the verified worker ownership transfer and partial-parser cleanup. Document bounded multipart transport representation and error mapping in the implementation contract without inventing a numeric maximum dimension. Pin and verify the version-sensitive Starlette and bundled LittleCMS bindings. Full browser failure/retry/closure coverage belongs to implemented-flow acceptance. These obligations preserve the accepted requirements and must be explicit in the task breakdown.
 
 **Accepted debt.** No deliberate implementation shortcut is accepted. There are no saved-as-open product decisions. The risks above carry owners and explicit stage deadlines; they are required feasibility and acceptance checks, not omitted requirements.
 
