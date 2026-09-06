@@ -402,3 +402,12 @@ def test_normalization_removes_service_metadata(output_format):
         assert not result.getexif()
         assert not getattr(result, "text", {})
         assert not result.info.get("xmp")
+
+
+def test_reverse_fragment_edit_starts_at_visible_upper_boundary():
+    images = image_module()
+    data = timeline(durations=(), edits=[(20, 70, -1), (20, 0, 0)])
+    header = box(b"tfhd", struct.pack(">III", 8, 1, 40))
+    run = box(b"trun", struct.pack(">II", 0, 3))
+    data += box(b"moof", box(b"traf", header + run))
+    assert images.heif_is_animated(data)

@@ -143,14 +143,18 @@ def timing_runs(table):
     return runs, decode_time
 
 
-def presentation_times(runs, start=None, end=None):
-    points = set()
-    previous = None
+def timeline_end(runs):
     last_end = max(
         (first + step * (count - 1) for first, step, count in runs), default=0
     )
     if runs:
         last_end += runs[-1][1]
+    return last_end
+
+
+def presentation_times(runs, start=None, end=None, include_previous=True):
+    points = set()
+    previous = None
     for first, step, count in runs:
         if not count:
             continue
@@ -173,7 +177,12 @@ def presentation_times(runs, start=None, end=None):
                     points.add(point)
         if len(points) > 1:
             return points
-    if start is not None and previous is not None and start < last_end:
+    if (
+        include_previous
+        and start is not None
+        and previous is not None
+        and start < timeline_end(runs)
+    ):
         points.add(start)
     return points
 
@@ -198,8 +207,15 @@ def track_is_animated(track, runs, movie_scale, media_scale):
             else:
                 lower = start if rate > 0 else start - span * abs(rate)
                 upper = start + span * rate if rate > 0 else start
-                if rate < 0 and not duration:
-                    points = presentation_times(runs, None, start + 1)
+                if rate < 0:
+                    points = presentation_times(
+                        runs, lower if duration else None, start, include_previous=False
+                    )
+                    first_time = min((first for first, _, _ in runs), default=0)
+                    points = {point for point in points if point > first_time}
+                    upper = min(start, timeline_end(runs))
+                    if upper > first_time and (not duration or upper > lower):
+                        points.add(upper)
                 else:
                     points = presentation_times(
                         runs, lower, upper if duration else None
