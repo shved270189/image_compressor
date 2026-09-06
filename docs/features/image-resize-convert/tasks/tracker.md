@@ -13,7 +13,7 @@
 | T7 | [Convert HDR to ordinary SDR output](./convert-hdr-to-ordinary-sdr-output.md) | domain | Tech Lead | 6h | T6 | done |
 | T8 | [Serve request-scoped image results](./serve-request-scoped-image-results.md) | ports | Tech Lead | 8h | T1, T7 | done |
 | T9 | [Build selection and local preview](./build-selection-and-local-preview.md) | ui | Tech Lead | 6h | — | done |
-| T10 | [Submit and download the current result](./submit-and-download-the-current-result.md) | ui | Tech Lead | 6h | T8, T9 | todo |
+| T10 | [Submit and download the current result](./submit-and-download-the-current-result.md) | ui | Tech Lead | 6h | T8, T9 | done |
 | T11 | [Verify browser acceptance](./verify-browser-acceptance.md) | tests | Tech Lead | 6h | T10 | todo |
 | T12 | [Verify security and container behavior](./verify-security-and-container-behavior.md) | tests | Tech Lead | 6h | T8 | todo |
 | T13 | [Document the completed workflow](./document-the-completed-workflow.md) | docs | Tech Lead | 2h | T11, T12 | todo |
@@ -35,3 +35,5 @@ Tech Lead owns delivery; Security Lead accepts T12 security review and Project o
 - T8 resumed: owner approved actionable 422 for output encoder dimension limits without extra reduction. Spec, contract and test plan reconciled. GREEN 174 host and 174 Linux container tests, including real HTTP format matrix, exact output bounds/retry, raw cancellation, socket interruption and cleared response bodies. Build/typecheck, Ruff and ESLint passed. Previous RED blocker is resolved; T8 committed.
 
 - T9: browser RED missing file selection; GREEN Chrome selection, byte boundaries, preview ownership, replacement/reset, no upload before submission, responsive overflow and reduced motion checks. Build/typecheck, ESLint, Ruff and 174 host tests passed. Native text inputs with numeric input mode preserve arbitrarily large dimension strings without numeric coercion.
+
+- T10: RED absent processing POST; GREEN complete download/reset/focus, single submission, safe structured errors, retained retry, full-body wait, interruption and stale completion suppression. Browser evidence in `_audit/implementation-download.md`. Build/typecheck, ESLint, Ruff and 180 host tests passed.
