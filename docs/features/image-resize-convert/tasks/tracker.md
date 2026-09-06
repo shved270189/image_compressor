@@ -10,7 +10,7 @@
 | T4 | [Handle fragmented HEIF timelines](./handle-fragmented-heif-timelines.md) | domain | Tech Lead | 6h | T3 | done |
 | T5 | [Resize and normalize output](./resize-and-normalize-output.md) | domain | Tech Lead | 6h | T4 | done |
 | T6 | [Preserve compatible color profiles](./preserve-compatible-color-profiles.md) | domain | Tech Lead | 8h | T5 | done |
-| T7 | [Convert HDR to ordinary SDR output](./convert-hdr-to-ordinary-sdr-output.md) | domain | Tech Lead | 6h | T6 | todo |
+| T7 | [Convert HDR to ordinary SDR output](./convert-hdr-to-ordinary-sdr-output.md) | domain | Tech Lead | 6h | T6 | done |
 | T8 | [Serve request-scoped image results](./serve-request-scoped-image-results.md) | ports | Tech Lead | 8h | T1, T7 | todo |
 | T9 | [Build selection and local preview](./build-selection-and-local-preview.md) | ui | Tech Lead | 6h | — | todo |
 | T10 | [Submit and download the current result](./submit-and-download-the-current-result.md) | ui | Tech Lead | 6h | T8, T9 | todo |
@@ -30,3 +30,4 @@ Tech Lead owns delivery; Security Lead accepts T12 security review and Project o
 - T4: GOOD RED fragmented sequence accepted; GREEN 91 tests, build/typecheck, Ruff and ESLint. Independent FFmpeg HEVC-track decoding and Pillow primary decoding passed. Linux application image distinguishes sequence/gallery and decodes gallery primary. Production handles duration defaults, signed composition and fragment continuation; no diagnostic fallback. T3 follow-up commits fixed reordered-end and fractional-rate regressions.
 - T5: GOOD RED transformation absent; GREEN 120 tests, build/typecheck, Ruff and ESLint. All twelve format pairs, exact rounding/bounds, alpha and metadata/orientation checks passed. Linux HEIC resize/PNG encode passed. Color-model conversion remains T6/T7.
 - T6: GOOD RED lost PNG gamma; GREEN 136 host tests and 95 Linux image tests. Build/typecheck, Ruff and ESLint passed. Gray/CMYK nontrivial color anchors, P3, NCLX and PNG gamma tests pass with matching RGB ICC. Bundled LittleCMS exercised on both platforms.
+- T7: GOOD RED missing HDR profile; GREEN 141 host tests and 100 Linux image tests. Build/typecheck, Ruff and ESLint passed. Real HLG and independent HLG/PQ neutral anchors verify ordinary 8-bit output, alpha and matching source-gamut profiles. No photographed PQ fixture is claimed.

@@ -490,6 +490,10 @@ def color_profile(image):
             for axis in ("x", "y")
         )
         transfer = nclx["transfer_characteristics"]
+        if transfer in (16, 18):
+            return rgb_profile(
+                chromaticities, decode=hlg_decode if transfer == 18 else pq_decode
+            )
         if transfer == 13:
             return rgb_profile(chromaticities, decode=srgb_decode)
         if transfer in (4, 5, 8):
@@ -542,8 +546,14 @@ def normalize_color(image):
         profile = color_profile(image)
         has_alpha = "A" in image.getbands() or "transparency" in image.info
         mode = "RGBA" if has_alpha else "RGB"
-        if profile and profile.profile.xcolor_space.strip() != "RGB":
-            target = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB"))
+        nclx = image.info.get("nclx_profile", {})
+        hdr = nclx.get("transfer_characteristics") in (16, 18)
+        if profile and (hdr or profile.profile.xcolor_space.strip() != "RGB"):
+            target = (
+                rgb_profile(nclx_chromaticities(nclx), decode=srgb_decode)
+                if hdr
+                else ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB"))
+            )
             try:
                 result = stack.enter_context(
                     closing(
@@ -562,3 +572,25 @@ def normalize_color(image):
         else:
             result = stack.enter_context(closing(image.convert(mode)))
         yield result, profile.tobytes() if profile else None
+
+
+def hlg_decode(value):
+    a = 0.17883277
+    b = 1 - 4 * a
+    c = 0.5 - a * math.log(4 * a)
+    return value * value / 3 if value <= 0.5 else (math.exp((value - c) / a) + b) / 12
+
+
+def pq_decode(value):
+    power = value ** (32 / 2523)
+    return (max(power - 3424 / 4096, 0) / (2413 / 128 - 2392 / 128 * power)) ** (
+        16384 / 2610
+    )
+
+
+def nclx_chromaticities(nclx):
+    return tuple(
+        nclx[f"color_primary_{color}_{axis}"]
+        for color in ("white", "red", "green", "blue")
+        for axis in ("x", "y")
+    )

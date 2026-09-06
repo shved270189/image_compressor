@@ -504,3 +504,39 @@ def test_color_model_conversion(mode, profile_name, color, expected, output_form
             abs(value - target) <= 2
             for value, target in zip(result.getpixel((0, 0)), expected)
         )
+
+
+@pytest.mark.parametrize(
+    "transfer,expected", [(18, (0, 40, 82, 142, 255)), (16, (0, 2, 24, 89, 255))]
+)
+def test_hdr_analytic_anchors(transfer, expected):
+    images = image_module()
+    with Image.open(FIXTURES / "DEMO_BT2100_HLG.heic") as real:
+        nclx = dict(real.info["nclx_profile"])
+    nclx["transfer_characteristics"] = transfer
+    with Image.new("RGBA", (5, 1)) as sample:
+        sample.putdata([(v, v, v, 128) for v in (0, 64, 128, 192, 255)])
+        sample.info["nclx_profile"] = nclx
+        with images.normalize_color(sample) as (result, profile):
+            assert profile
+            for x, value in enumerate(expected):
+                pixel = result.getpixel((x, 0))
+                assert all(abs(channel - value) <= 1 for channel in pixel[:3])
+                assert pixel[3] == 128
+
+
+@pytest.mark.parametrize("output_format", ["jpeg", "png", "webp"])
+def test_real_hlg_becomes_eight_bit_sdr(output_format):
+    from PIL import ImageCms
+
+    images = image_module()
+    with (FIXTURES / "DEMO_BT2100_HLG.heic").open("rb") as source:
+        data = images.process_image(source, 60, None, output_format)
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.mode == "RGB" and result.size == (60, 40)
+        profile = ImageCms.ImageCmsProfile(io.BytesIO(result.info["icc_profile"]))
+        assert profile.profile.xcolor_space.strip() == "RGB"
+        assert (
+            profile.profile.red_colorant != ImageCms.createProfile("sRGB").red_colorant
+        )
+        assert not result.getexif()
