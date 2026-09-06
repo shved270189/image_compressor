@@ -1,0 +1,333 @@
+openapi: 3.1.0
+info:
+  title: Image resize and conversion API
+  version: 0.1.0
+  description: |
+    Prepare one image for independently optional maximum dimensions and convert
+    it to JPEG, PNG or WebP for the owner's local single-page workflow. Return
+    the complete processed file in the submitted operation, allowing one browser
+    download followed by a clean form. Selection and optional Preview are local
+    browser actions and never upload a file.
+
+    This is the planned feature contract, derived from data-model.md, spec.md
+    and sad.md section 6. Image processing is not implemented in the foundation.
+    Errors retain standard FastAPI detail envelopes under foundation ADR 0002.
+    There are no accounts, saved results, result IDs, lookup endpoints or events.
+servers:
+  - url: /
+    description: Same-origin application; development uses the existing Vite API proxy.
+security: []
+tags:
+  - name: Images
+    description: Request-scoped processing of one original into one result.
+paths:
+  /api/v1/images/process:
+    post:
+      tags: [Images]
+      operationId: processImage
+      summary: Resize and convert one image
+      security: []
+      description: |
+        Submit one file and at least one transformation parameter. The browser
+        sends output_format=jpeg by default; the server does not count an
+        omitted format's fallback as a supplied parameter. Empty dimension
+        parts impose no bound and do not count as supplied parameters. Valid
+        dimensions with omitted output_format produce JPEG. An explicitly
+        empty or unsupported output_format is invalid.
+
+        Detect static JPEG, PNG, WebP or HEIC from actual content, independently
+        of the filename or declared media type. Accept at most 20,000,000 file
+        bytes and 40,000,000 decoded pixels, including equality. The byte limit
+        applies to the file, not the multipart envelope. Bound multipart parsing
+        and inspect content, animation and selected-image dimensions before
+        expensive decoding; preserve decoder safety protections and recheck
+        dimensions if decoding can change them. Reject empty, corrupted,
+        unsupported and animated input. For HEIC, select the designated primary
+        static image, even when it is not first, and omit extra images without
+        treating a static collection as animation. Produce ordinary 8-bit output
+        from HDR without promising the original HDR appearance.
+
+        Normalize visible orientation once before calculating dimensions. Use
+        the largest proportional scale no greater than one that fits every
+        supplied bound, without cropping, stretching or extra reduction. Round
+        each scaled dimension to the nearest whole pixel, with halves up and
+        a minimum of one pixel. Never exceed a supplied bound or an original
+        oriented dimension. Thus 2400x1200 with width 1200 becomes 1200x600;
+        height 300, alone or with width 1200, produces 600x300. An original of
+        1000x333 with width 500 produces 500x167. Ineffective bounds and
+        same-format requests remain valid and still normalize the output.
+
+        Composite partial and full transparency onto white for JPEG; retain
+        transparency for PNG and WebP. Preserve correct color interpretation,
+        transforming colors when the pixel model changes and keeping only a
+        profile compatible with the resulting pixels. Remove GPS, camera,
+        EXIF, XMP and textual service metadata after applying orientation.
+        There is no smaller-file, byte-identity or quality-control guarantee.
+
+        The successful response contains only this operation's binary result.
+        The browser waits for the whole response and checks currentness before
+        consuming the operation, initiating one download and resetting the form.
+        A failed or incomplete transfer is not a successful result. A retry is
+        a new submission, not a replay of saved output; no Idempotency-Key is
+        required or used to retrieve a prior result.
+
+        Close partial uploads on parser failure or interruption. Release upload
+        handles, decoded images and intermediates when processing no longer
+        needs them, retaining ownership of native work until it actually ends.
+        Release response-owned output on completion or failure. A disconnect
+        or interrupted response does not guarantee an HTTP error body. Retain
+        no server original or result for later retrieval. Errors and logs must
+        not expose image bytes, original filenames, identifying metadata or
+        internal exception details. Browser download cleanup remains independent
+        of form reset; its safe handoff boundary still requires SAD section 11
+        feasibility evidence.
+      requestBody:
+        required: true
+        description: One original and the supplied transformation parameters.
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImageProcessingRequest'
+            examples:
+              defaultJpeg:
+                summary: Browser default; file value denotes binary fixture contents
+                value:
+                  file: '<binary contents of test-image.png>'
+                  output_format: jpeg
+              widthOnly:
+                summary: Omitted output format falls back to JPEG with supplied width
+                value:
+                  file: '<binary contents of test-image.png>'
+                  max_width: 1200
+              bothBounds:
+                summary: Fit both bounds and retain transparency in PNG
+                value:
+                  file: '<binary contents of test-image.webp>'
+                  max_width: 1200
+                  max_height: 300
+                  output_format: png
+              emptyBounds:
+                summary: Empty dimensions impose no bound; explicit WebP counts as a parameter
+                value:
+                  file: '<binary contents of test-image.heic>'
+                  max_width: ''
+                  max_height: ''
+                  output_format: webp
+      responses:
+        '200':
+          description: |
+            Complete decodable result in the effective output format, with the
+            corresponding media type and attachment filename. The original is
+            untouched. Content-Disposition is required and uses result.jpg for
+            JPEG, result.png for PNG or result.webp for WebP. No JSON wrapper,
+            result characteristics, result identifier or subsequent download URL
+            is returned. Example values describe binary payloads, not literal
+            response text or base64 encoding.
+          headers:
+            Content-Disposition:
+              description: Attachment filename matching the effective output format.
+              schema:
+                type: string
+                enum:
+                  - 'attachment; filename="result.jpg"'
+                  - 'attachment; filename="result.png"'
+                  - 'attachment; filename="result.webp"'
+              example: 'attachment; filename="result.jpg"'
+          content:
+            image/jpeg:
+              schema:
+                $ref: '#/components/schemas/Result'
+              example: '<binary JPEG result bytes>'
+            image/png:
+              schema:
+                $ref: '#/components/schemas/Result'
+              example: '<binary PNG result bytes>'
+            image/webp:
+              schema:
+                $ref: '#/components/schemas/Result'
+              example: '<binary WebP result bytes>'
+        '400':
+          description: Malformed multipart input that cannot be parsed; close partial uploads.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              example:
+                detail: Malformed multipart request.
+        '413':
+          description: |
+            File exceeds 20,000,000 bytes or the selected static image exceeds
+            40,000,000 decoded pixels, including a post-decode dimension recheck.
+            Equality at either limit is accepted. Multipart overhead is not
+            counted against the file-byte allowance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                bytesExceeded:
+                  value:
+                    detail: Input exceeds 20000000 bytes.
+                pixelsExceeded:
+                  value:
+                    detail: Input exceeds 40000000 decoded pixels.
+        '415':
+          description: Unsupported request media type or actual input image format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              example:
+                detail: Input must contain a JPEG, PNG, WebP or HEIC image.
+        '422':
+          description: |
+            Missing file or all transformation parameters; invalid dimensions or
+            output choice; empty, corrupted or animated input. Parameter errors
+            may use FastAPI's structured validation envelope; explicit HTTP
+            rejections use a readable detail string. Messages are explanatory,
+            not stable machine error codes. When multiple problems exist, clients
+            must not rely on a particular validation order.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/HTTPError'
+                  - $ref: '#/components/schemas/HTTPValidationError'
+              examples:
+                missingFile:
+                  value:
+                    detail:
+                      - loc: [body, file]
+                        msg: Field required
+                        type: missing
+                invalidDimension:
+                  value:
+                    detail:
+                      - loc: [body, max_width]
+                        msg: Input should be greater than or equal to 1
+                        type: greater_than_equal
+                        input: 0
+                        ctx:
+                          ge: 1
+                missingParameters:
+                  value:
+                    detail: Supply a maximum dimension or an output format.
+                unsupportedOutput:
+                  value:
+                    detail: Output format must be jpeg, png or webp.
+                emptyInput:
+                  value:
+                    detail: Input file is empty.
+                corruptedInput:
+                  value:
+                    detail: Input image is corrupted or cannot be decoded.
+                animatedInput:
+                  value:
+                    detail: Animated input is not supported.
+        '500':
+          description: |
+            Internal decoding, color processing, transformation or encoding
+            failure not attributable to a client input rejection above. Return
+            a safe readable explanation when a response is still possible,
+            release operation resources and provide no successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              example:
+                detail: Image processing failed. Please try again.
+components:
+  schemas:
+    ImageProcessingRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          $ref: '#/components/schemas/Original'
+        max_width:
+          $ref: '#/components/schemas/MaximumDimension'
+        max_height:
+          $ref: '#/components/schemas/MaximumDimension'
+        output_format:
+          $ref: '#/components/schemas/OutputFormat'
+      anyOf:
+        - required: [output_format]
+        - required: [max_width]
+          properties:
+            max_width:
+              $ref: '#/components/schemas/PositiveDimension'
+        - required: [max_height]
+          properties:
+            max_height:
+              $ref: '#/components/schemas/PositiveDimension'
+      description: |
+        At least one non-empty valid dimension or an explicit valid output format
+        must be supplied. Multipart dimension values are serialized as text;
+        their logical values are positive whole pixel counts. There is no new
+        product upper bound on a supplied dimension; oversized bounds are valid
+        and cannot enlarge the original. Null is not a dimension or format value.
+    Original:
+      type: string
+      format: binary
+      description: |
+        Binary contents of one non-empty static JPEG, PNG, WebP or HEIC original.
+        Filename and declared media type are not proof of support. Byte and pixel
+        limits require server content inspection; JSON Schema string length is
+        not used as a file-byte or decoded-pixel validator.
+      x-max-file-bytes: 20000000
+      x-max-decoded-pixels: 40000000
+    PositiveDimension:
+      type: integer
+      minimum: 1
+      description: Optional maximum width or height of the correctly oriented result, in pixels.
+    MaximumDimension:
+      anyOf:
+        - $ref: '#/components/schemas/PositiveDimension'
+        - type: string
+          const: ''
+      description: Omission or an empty multipart part imposes no bound and supplies no parameter.
+    OutputFormat:
+      type: string
+      enum: [jpeg, png, webp]
+      description: |
+        JPEG is the browser form default. If this part is omitted, valid supplied
+        dimensions select JPEG. No schema default is applied before checking
+        that the caller supplied a transformation parameter. Empty is invalid.
+    Result:
+      type: string
+      format: binary
+      description: Complete encoded image bytes in the effective output format; not base64 or JSON.
+    HTTPError:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+          description: Safe readable explanation; wording is not a machine-readable error code.
+    HTTPValidationError:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+    ValidationError:
+      type: object
+      required: [loc, msg, type]
+      properties:
+        loc:
+          type: array
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+        msg:
+          type: string
+        type:
+          type: string
+        input:
+          description: Optional rejected non-image parameter; never include image bytes or identifying file data.
+        ctx:
+          type: object
+          description: Optional safe validation context, such as a dimension constraint; never raw exceptions.
