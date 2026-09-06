@@ -540,3 +540,51 @@ def test_real_hlg_becomes_eight_bit_sdr(output_format):
             profile.profile.red_colorant != ImageCms.createProfile("sRGB").red_colorant
         )
         assert not result.getexif()
+
+
+@pytest.mark.parametrize("output_format", ["png", "webp"])
+def test_color_key_transparency_is_expanded_before_resize(output_format):
+    images = image_module()
+    with Image.new("RGB", (2, 1)) as image, io.BytesIO() as source:
+        image.putdata([(255, 0, 0), (0, 0, 255)])
+        image.save(source, "PNG", transparency=(255, 0, 0))
+        source.seek(0)
+        data = images.process_image(source, 1, None, output_format)
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.getpixel((0, 0)) == (0, 0, 255, 128)
+
+
+@pytest.mark.parametrize("output_format", ["png", "webp"])
+def test_sixteen_bit_transparency_uses_original_samples(output_format):
+    images = image_module()
+    with (
+        Image.frombytes("I;16", (2, 1), struct.pack("<HH", 32768, 32769)) as image,
+        io.BytesIO() as source,
+    ):
+        image.save(source, "PNG", transparency=32768)
+        source.seek(0)
+        data = images.process_image(source, None, None, output_format)
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.mode == "RGBA"
+        assert result.getpixel((0, 0))[3] == 0
+        assert result.getpixel((1, 0)) == (128, 128, 128, 255)
+
+
+@pytest.mark.parametrize("has_movie", [False, True])
+def test_orphan_fragment_is_rejected(has_movie):
+    images = image_module()
+    data = timeline(durations=()) if has_movie else (
+        FIXTURES / "RGB_10__128x128.heif"
+    ).read_bytes()
+    header = box(b"tfhd", struct.pack(">III", 8, 77, 40))
+    run = box(b"trun", struct.pack(">II", 0, 3))
+    data += box(b"moof", box(b"traf", header + run))
+    with pytest.raises(images.InvalidImage):
+        images.heif_is_animated(data)
+    if not has_movie:
+        with (
+            io.BytesIO(data) as source,
+            pytest.raises(images.InvalidImage),
+            images.decode_image(source),
+        ):
+            pytest.fail("Orphan fragment accepted during decoding")

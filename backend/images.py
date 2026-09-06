@@ -254,11 +254,31 @@ def heif_is_animated(data):
             raise InvalidImage("Invalid HEIF brands.")
         movie = one_box(data, b"moov", False)
         if movie is None:
+            if any(kind == b"moof" for kind, _ in boxes(data)):
+                raise InvalidImage("HEIF fragments have no movie.")
             return False
-        movie_scale = clock_scale(one_box(movie, b"mvhd"))
+        tracks = {}
         for kind, track in boxes(movie):
             if kind != b"trak":
                 continue
+            header = one_box(track, b"tkhd")
+            if header[0] not in (0, 1):
+                raise InvalidImage("Invalid HEIF track header.")
+            offset = 20 if header[0] == 1 else 12
+            track_id = struct.unpack_from(">I", header, offset)[0]
+            if track_id in tracks:
+                raise InvalidImage("Duplicate HEIF track.")
+            tracks[track_id] = track
+        for kind, fragment in boxes(data):
+            if kind != b"moof":
+                continue
+            for name, track in boxes(fragment):
+                if name == b"traf":
+                    header = one_box(track, b"tfhd")
+                    if struct.unpack_from(">I", header, 4)[0] not in tracks:
+                        raise InvalidImage("HEIF fragment references an unknown track.")
+        movie_scale = clock_scale(one_box(movie, b"mvhd"))
+        for track_id, track in tracks.items():
             media = one_box(track, b"mdia")
             handler = one_box(media, b"hdlr")
             if len(handler) < 12:
@@ -268,9 +288,6 @@ def heif_is_animated(data):
             media_scale = clock_scale(one_box(media, b"mdhd"))
             table = one_box(one_box(media, b"minf"), b"stbl")
             runs, end = timing_runs(table)
-            header = one_box(track, b"tkhd")
-            offset = 20 if header[0] == 1 else 12
-            track_id = struct.unpack_from(">I", header, offset)[0]
             runs.extend(fragment_runs(data, movie, track_id, end))
             if track_is_animated(track, runs, movie_scale, media_scale):
                 return True
@@ -382,15 +399,15 @@ def process_image(source, max_width=None, max_height=None, output_format="jpeg")
                 f"{output_format.upper()} supports sides up to {limit:,} pixels. "
                 "Reduce maximum width or height and try again."
             )
-        resized = stack.enter_context(
+        normalized, profile = stack.enter_context(normalize_color(image))
+        result = stack.enter_context(
             closing(
-                image.resize(
+                normalized.resize(
                     size,
                     Image.Resampling.LANCZOS,
                 )
             )
         )
-        result, profile = stack.enter_context(normalize_color(resized))
         has_alpha = "A" in result.getbands()
         if output_format == "jpeg" and has_alpha:
             white = stack.enter_context(
@@ -564,6 +581,18 @@ def normalize_color(image):
             )
             normalized = stack.enter_context(closing(scaled.convert("L")))
             normalized.info = image.info.copy()
+            if "transparency" in image.info:
+                key = image.info["transparency"]
+                alpha = stack.enter_context(
+                    closing(
+                        integer.point(
+                            [0 if value == key else 255 for value in range(65536)],
+                            "L",
+                        )
+                    )
+                )
+                normalized.putalpha(alpha)
+                normalized.info.pop("transparency")
             image = normalized
         profile = color_profile(image)
         has_alpha = "A" in image.getbands() or "transparency" in image.info
