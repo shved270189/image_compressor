@@ -5,9 +5,10 @@ requires-python = ">=3.14,<3.15"
 dependencies = [
     "fastapi",
     "uvicorn",
-    "pillow",
+    "pillow==12.3.0",
     "python-multipart==0.0.22",
     "starlette==1.6.0",
+    "pillow-heif==1.6.0",
 ]
 
 [dependency-groups]

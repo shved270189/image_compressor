@@ -7,6 +7,10 @@ from python_multipart.multipart import parse_options_header
 from starlette.datastructures import UploadFile
 from starlette.formparsers import MultiPartException, MultiPartParser
 
+from backend import images
+
+images.configure_codecs()
+
 app = FastAPI()
 
 MAX_FILE_BYTES = 20_000_000
