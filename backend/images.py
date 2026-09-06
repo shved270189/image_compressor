@@ -1,5 +1,6 @@
+import io
 import struct
-from contextlib import closing, contextmanager
+from contextlib import ExitStack, closing, contextmanager
 from fractions import Fraction
 
 from PIL import Image, ImageOps, UnidentifiedImageError
@@ -328,3 +329,52 @@ def fragment_runs(data, movie, track_id, decode_time):
                         result.append((decode_time + composition, sample_duration, 1))
                     decode_time += sample_duration
     return result
+
+
+def output_size(size, max_width=None, max_height=None):
+    width, height = size
+    scale = min(
+        Fraction(1),
+        Fraction(max_width, width) if max_width else 1,
+        Fraction(max_height, height) if max_height else 1,
+    )
+    return tuple(
+        max(
+            1,
+            (2 * dimension * scale.numerator + scale.denominator)
+            // (2 * scale.denominator),
+        )
+        for dimension in size
+    )
+
+
+def process_image(source, max_width=None, max_height=None, output_format="jpeg"):
+    with decode_image(source) as image, ExitStack() as stack:
+        resized = stack.enter_context(
+            closing(
+                image.resize(
+                    output_size(image.size, max_width, max_height),
+                    Image.Resampling.LANCZOS,
+                )
+            )
+        )
+        has_alpha = "A" in resized.getbands() or "transparency" in resized.info
+        result = stack.enter_context(
+            closing(resized.convert("RGBA" if has_alpha else "RGB"))
+        )
+        profile = image.info.get("icc_profile")
+        if output_format == "jpeg" and has_alpha:
+            white = stack.enter_context(
+                closing(Image.new("RGBA", result.size, "white"))
+            )
+            composite = stack.enter_context(
+                closing(Image.alpha_composite(white, result))
+            )
+            result = stack.enter_context(closing(composite.convert("RGB")))
+        result.info.clear()
+        options = {"icc_profile": profile} if profile else {}
+        if output_format == "webp":
+            options["lossless"] = True
+        with io.BytesIO() as output:
+            result.save(output, format=output_format.upper(), **options)
+            return output.getvalue()

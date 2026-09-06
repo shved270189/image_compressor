@@ -332,3 +332,73 @@ def test_fragment_duration_defaults_and_signed_composition(
         base = box(b"tfdt", struct.pack(">II", 0, 0)) if index == 0 else b""
         data += box(b"moof", box(b"traf", header + base + run))
     assert images.heif_is_animated(data) is animated
+
+
+@pytest.mark.parametrize(
+    "size,width,height,expected",
+    [
+        ((2400, 1200), 1200, None, (1200, 600)),
+        ((2400, 1200), None, 300, (600, 300)),
+        ((2400, 1200), 1200, 300, (600, 300)),
+        ((1000, 333), 500, None, (500, 167)),
+        ((800, 600), 1600, None, (800, 600)),
+        ((1, 4000), 1, 1, (1, 1)),
+        ((4000, 1), 1, 1, (1, 1)),
+        ((12, 8), 10**1000, None, (12, 8)),
+    ],
+)
+def test_geometry_and_encoded_bounds(size, width, height, expected):
+    images = image_module()
+    assert hasattr(images, "process_image"), "Image transformation is not implemented"
+    assert images.output_size(size, width, height) == expected
+    with io.BytesIO(encoded(size=size)) as source:
+        data = images.process_image(source, width, height, "png")
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.size == expected
+
+
+@pytest.mark.parametrize("input_format", ["JPEG", "PNG", "WEBP", "HEIF"])
+@pytest.mark.parametrize("output_format", ["jpeg", "png", "webp"])
+def test_all_format_pairs(input_format, output_format):
+    images = image_module()
+    with io.BytesIO(encoded(input_format)) as source:
+        data = images.process_image(source, None, None, output_format)
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.format == output_format.upper()
+        assert result.size == (12, 8)
+        assert result.n_frames == 1 if hasattr(result, "n_frames") else True
+
+
+@pytest.mark.parametrize("output_format", ["jpeg", "png", "webp"])
+@pytest.mark.parametrize("alpha", [0, 128])
+def test_output_transparency(output_format, alpha):
+    images = image_module()
+    with io.BytesIO(encoded(mode="RGBA", color=(255, 0, 0, alpha))) as source:
+        data = images.process_image(source, None, None, output_format)
+    with Image.open(io.BytesIO(data)) as result:
+        if output_format == "jpeg":
+            expected = (255, 255 - alpha, 255 - alpha)
+            assert all(
+                abs(a - b) <= 2 for a, b in zip(result.getpixel((0, 0)), expected)
+            )
+        else:
+            assert result.getpixel((0, 0))[3] == alpha
+
+
+@pytest.mark.parametrize("output_format", ["jpeg", "png", "webp"])
+def test_normalization_removes_service_metadata(output_format):
+    from PIL.PngImagePlugin import PngInfo
+
+    images = image_module()
+    exif = Image.Exif()
+    exif[274] = 6
+    exif[271] = "Private camera"
+    metadata = PngInfo()
+    metadata.add_text("Description", "Private location")
+    with io.BytesIO(encoded(exif=exif, pnginfo=metadata)) as source:
+        data = images.process_image(source, 4, None, output_format)
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.size == (4, 6)
+        assert not result.getexif()
+        assert not getattr(result, "text", {})
+        assert not result.info.get("xmp")
