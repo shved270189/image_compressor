@@ -268,3 +268,9 @@ def test_repeat_edit_respects_first_presentation_offset():
     offset = data.index(b"tkhd") + 4 + 20
     data[offset : offset + 4] = (150).to_bytes(4)
     assert not images.heif_is_animated(data)
+
+
+def test_dwell_after_composition_timeline_end_is_not_presented():
+    images = image_module()
+    data = timeline(durations=(100, 1), offsets=(0, -99), edits=[(1, 50, 0), (1, 0, 0)])
+    assert not images.heif_is_animated(data)

@@ -145,7 +145,11 @@ def timing_runs(table):
 def presentation_times(runs, start=None, end=None):
     points = set()
     previous = None
-    last_end = max((first + step * count for first, step, count in runs), default=0)
+    last_end = max(
+        (first + step * (count - 1) for first, step, count in runs), default=0
+    )
+    if runs:
+        last_end += runs[-1][1]
     for first, step, count in runs:
         if not count:
             continue
