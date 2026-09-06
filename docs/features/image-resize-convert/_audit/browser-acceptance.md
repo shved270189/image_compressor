@@ -1,6 +1,6 @@
 # Implemented browser acceptance — 2026-09-06
 
-Status: partial; T11 remains open. These observations concern the implemented
+Status: PASS — T11 acceptance completed on 2026-09-06. These observations concern the implemented
 application, not the previous feasibility probe.
 
 | Environment | Scenario | Actual result |
@@ -14,7 +14,7 @@ application, not the previous feasibility probe.
 | Native macOS Safari 26.6.2 | PNG selection/preview, default JPEG processing, automatic download/reset/focus | PASS; Downloads reports result.jpg 637 bytes; Pillow decodes 32x16 JPEG |
 | Native macOS Firefox 155.0 | PNG selection/preview, width16, automatic JPEG download/reset | PASS; Downloads reports result(1).jpg 633 bytes; Pillow decodes 16x8 JPEG |
 | Firefox 155.0 / WebKit 26.5 automation | Failure/retry, stale/duplicate, closure, both widths, reduced motion, keyboard | PASS; engine evidence, with native Safari server-error retry checked separately |
-| Real iPhone Safari and iOS Firefox | Download and form reset | PASS, owner-reported; final iPhone network retry pending. Other follow-ups did not identify a browser |
+| Real iPhone Safari and iOS Firefox | Download and form reset | PASS, owner-reported; iPhone Safari network failure/retry also confirmed. Other follow-ups did not identify a browser |
 | Project owner | Readability of labels, fields and buttons on phone and desktop | ACCEPTED by owner on 2026-09-06 |
 
 Chrome test scripts were run through the existing Playwright CLI in
@@ -88,10 +88,21 @@ file selection. Pillow independently decoded the saved file.
 
 WebKit automation is engine evidence, not a claim of physical iPhone execution or
 Safari UI automation. Owner-reported native/mobile checks remain separately
-attributed above. A final real iPhone Safari network-failure/retained-input/retry
-check has been requested; its result is pending. Full acceptance is not claimed
-from the desktop engine alone.
+attributed above. The final real iPhone Safari network-failure/retained-input/retry check was
+subsequently confirmed by the owner, as recorded below. Acceptance combines the
+explicitly attributed native/device observations and automated engine checks;
+it does not claim every scenario was automated on a physical iPhone.
 
 Firefox/WebKit selection checks also pass: exact byte boundaries, preview failure
 without blocked processing, old URL release, rapid replacement, exact long-bound
 text retention, no upload before submit and reload without restored selection.
+
+## Final owner confirmation — 2026-09-06
+
+The owner explicitly confirmed the requested real iPhone Safari network-failure
+scenario: the selected file remains after the failed offline submission, and
+restoring connectivity then retrying downloads the result and clears the form.
+This closes the final requested manual acceptance check. T11 is complete based
+on the evidence matrix above, including owner readability acceptance, native
+Safari/Firefox downloads and recovery, and automated lifecycle/accessibility
+checks. Browser/version and automation-versus-device distinctions remain intact.

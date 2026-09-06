@@ -14,9 +14,9 @@
 | T8 | [Serve request-scoped image results](./serve-request-scoped-image-results.md) | ports | Tech Lead | 8h | T1, T7 | done |
 | T9 | [Build selection and local preview](./build-selection-and-local-preview.md) | ui | Tech Lead | 6h | — | done |
 | T10 | [Submit and download the current result](./submit-and-download-the-current-result.md) | ui | Tech Lead | 6h | T8, T9 | done |
-| T11 | [Verify browser acceptance](./verify-browser-acceptance.md) | tests | Tech Lead | 6h | T10 | review |
+| T11 | [Verify browser acceptance](./verify-browser-acceptance.md) | tests | Tech Lead | 6h | T10 | done |
 | T12 | [Verify security and container behavior](./verify-security-and-container-behavior.md) | tests | Tech Lead | 6h | T8 | done |
-| T13 | [Document the completed workflow](./document-the-completed-workflow.md) | docs | Tech Lead | 2h | T11, T12 | review |
+| T13 | [Document the completed workflow](./document-the-completed-workflow.md) | docs | Tech Lead | 2h | T11, T12 | done |
 
 **Total:** 13 tasks, 78 hours, 9.75 person-days at 8 hours/day. Estimates exclude waiting for device access and owner/security sign-off.
 
@@ -55,3 +55,8 @@ The task table above records current status.
 
 - T12 final: independent agent acting as Security Lead accepted the technical scope; 179 feature tests independently rerun, no confirmed blocking defects. T12/SAD do not require a human signature; prior unsupported signature wording corrected. T12 done.
 - T11 final follow-up: Firefox 155.0 and WebKit 26.5 pass download, retry, ownership, interruption, closure, keyboard/reduced-motion and responsive checks. Native Safari real 422 correction/retry also passes with independently decoded output. Real iPhone network-failure/retry result pending; engine/native evidence distinguished in audit.
+
+- T11 complete (2026-09-06): owner explicitly confirmed real iPhone Safari offline failure retains input; reconnect/retry downloads and clears the form. Final requested manual check closed; evidence preserves native/engine attribution.
+- T13 complete: README and architecture map now reflect accepted browser/security evidence. No public deployment or universal browser coverage is claimed. Final build/test/lint and local-link checks recorded with this completion.
+
+Final T13 gate: `npm --prefix frontend run build` PASS; `uv run pytest -q` 180 passed in 8.68s; `uv run ruff check .` PASS; `npm --prefix frontend run lint` PASS; README/architecture-map local links and `git diff --check` PASS. All 13 implementation tasks are done. Independent whole-feature SDD review remains the next pipeline stage, separate from these task gates.
