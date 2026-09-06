@@ -1,8 +1,10 @@
 import asyncio
+import io
 import os
 import re
 
 import httpx
+from PIL import Image
 
 from backend.main import app
 
@@ -32,7 +34,34 @@ def test_skeleton():
                 assert response.content
                 assert "text/html" not in response.headers["content-type"]
 
-            for path in ("/api", "/api/missing", "/api/missing/nested"):
+            with (
+                Image.new("RGBA", (4, 2), (30, 60, 90, 128)) as image,
+                io.BytesIO() as source,
+            ):
+                image.save(source, "PNG")
+                response = await client.post(
+                    "/api/v1/images/process",
+                    files={"file": ("input.png", source.getvalue(), "image/png")},
+                    data={"max_width": "2", "output_format": "webp"},
+                )
+            assert response.status_code == 200
+            assert response.headers["content-type"] == "image/webp"
+            assert response.headers["content-disposition"] == (
+                'attachment; filename="result.webp"'
+            )
+            with Image.open(io.BytesIO(response.content)) as result:
+                result.load()
+                assert result.size == (2, 1)
+                pixel = result.getpixel((0, 0))
+                assert pixel[3] == 128
+                assert all(abs(actual - expected) <= 1 for actual, expected in zip(
+                    pixel[:3], (30, 60, 90), strict=True
+                ))
+
+            for path in (
+                "/api", "/api/missing", "/api/missing/nested",
+                "/api/v1/images/result.webp",
+            ):
                 for accept in ("application/json", "text/html"):
                     response = await client.get(path, headers={"Accept": accept})
                     assert response.status_code == 404
