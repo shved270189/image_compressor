@@ -241,9 +241,90 @@ def heif_is_animated(data):
                 continue
             media_scale = clock_scale(one_box(media, b"mdhd"))
             table = one_box(one_box(media, b"minf"), b"stbl")
-            runs, _ = timing_runs(table)
+            runs, end = timing_runs(table)
+            header = one_box(track, b"tkhd")
+            offset = 20 if header[0] == 1 else 12
+            track_id = struct.unpack_from(">I", header, offset)[0]
+            runs.extend(fragment_runs(data, movie, track_id, end))
             if track_is_animated(track, runs, movie_scale, media_scale):
                 return True
         return False
     except IndexError, struct.error:
         raise InvalidImage("Corrupted HEIF timeline.") from None
+
+
+def fragment_runs(data, movie, track_id, decode_time):
+    defaults = {}
+    extensions = one_box(movie, b"mvex", False)
+    if extensions is not None:
+        for kind, value in boxes(extensions):
+            if kind == b"trex":
+                if len(value) != 24 or value[0] != 0:
+                    raise InvalidImage("Invalid HEIF fragment defaults.")
+                identifier, _, duration, _, _ = struct.unpack_from(">5I", value, 4)
+                if identifier in defaults:
+                    raise InvalidImage("Duplicate HEIF fragment defaults.")
+                defaults[identifier] = duration
+    result = []
+    for kind, fragment in boxes(data):
+        if kind != b"moof":
+            continue
+        for name, track in boxes(fragment):
+            if name != b"traf":
+                continue
+            header = one_box(track, b"tfhd")
+            if len(header) < 8 or header[0] != 0:
+                raise InvalidImage("Invalid HEIF fragment header.")
+            flags, identifier = struct.unpack_from(">II", header)
+            if identifier != track_id:
+                continue
+            position = 8 + (8 if flags & 1 else 0) + (4 if flags & 2 else 0)
+            duration = defaults.get(identifier)
+            if flags & 8:
+                duration = struct.unpack_from(">I", header, position)[0]
+                position += 4
+            position += (4 if flags & 16 else 0) + (4 if flags & 32 else 0)
+            if position != len(header):
+                raise InvalidImage("Invalid HEIF fragment header extent.")
+            base = one_box(track, b"tfdt", False)
+            if base is not None:
+                if base[0] not in (0, 1) or len(base) != (12 if base[0] else 8):
+                    raise InvalidImage("Invalid HEIF fragment time.")
+                decode_time = int.from_bytes(base[4:])
+            for run_kind, run in boxes(track):
+                if run_kind != b"trun":
+                    continue
+                if len(run) < 8 or run[0] not in (0, 1):
+                    raise InvalidImage("Invalid HEIF fragment run.")
+                flags = int.from_bytes(run[1:4])
+                count = int.from_bytes(run[4:8])
+                position = 8 + (4 if flags & 1 else 0) + (4 if flags & 4 else 0)
+                fields = [flag for flag in (256, 512, 1024, 2048) if flags & flag]
+                if len(run) != position + 4 * len(fields) * count:
+                    raise InvalidImage("Invalid HEIF fragment sample extent.")
+                if not fields:
+                    if duration is None:
+                        raise InvalidImage("Missing HEIF sample duration.")
+                    if count:
+                        result.append((decode_time, duration, count))
+                    decode_time += duration * count
+                    continue
+                for _ in range(count):
+                    sample_duration = duration
+                    composition = 0
+                    for flag in fields:
+                        value = int.from_bytes(
+                            run[position : position + 4],
+                            signed=flag == 2048 and run[0] == 1,
+                        )
+                        if flag == 256:
+                            sample_duration = value
+                        elif flag == 2048:
+                            composition = value
+                        position += 4
+                    if sample_duration is None:
+                        raise InvalidImage("Missing HEIF sample duration.")
+                    if composition != -(2**31):
+                        result.append((decode_time + composition, sample_duration, 1))
+                    decode_time += sample_duration
+    return result

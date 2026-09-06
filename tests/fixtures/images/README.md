@@ -13,3 +13,7 @@ Immutable decoder controls copied from the pinned, hash-verified feasibility fix
 | guitar_cw90.hif | `f0d5e88be07b9d70a3715218ca612ccf45b126e5b4b42172dce14a62d2099932` |
 | starfield_animation.heic | `fbf31cd9aa6fc4c997d7eb2ea05541627bf3dbcb4115b7d453f63dcd1ec4fb26` |
 | zPug_3.heic | `daf1515c651e15968ad6ec142e443759156fee76c65715e4f5713cf1ad072774` |
+
+## Generated track controls
+
+`generate_timelines.py` uses installed FFmpeg/libx265 to encode three independent test-pattern samples. It appends their movie/fragments to a static HEIC primary and relocates initial chunk offsets. The gallery adds an empty edit list. Both primary images decode with Pillow/libheif; both HEVC tracks decode without errors using FFmpeg `-map 0:1` (`-ignore_editlist 1` for the gallery). These are synthetic, independently encoded controls, not camera files. FFmpeg is fixture-generation tooling only, not a runtime/test dependency.

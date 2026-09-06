@@ -282,3 +282,53 @@ def test_fractional_forward_edit_rate():
     offset = data.index(b"elst") + 20
     data[offset : offset + 4] = (32768).to_bytes(4)
     assert images.heif_is_animated(data)
+
+
+@pytest.mark.parametrize(
+    "name,animated",
+    [("fragmented-sequence.heic", True), ("fragmented-gallery.heic", False)],
+)
+def test_independently_encoded_fragmented_controls(name, animated):
+    images = image_module()
+    path = FIXTURES / name
+    with Image.open(path) as primary:
+        assert primary.size == (128, 128)
+        expected = primary.tobytes()
+    assert images.heif_is_animated(path.read_bytes()) is animated
+    with path.open("rb") as source:
+        if animated:
+            with pytest.raises(images.InvalidImage), images.decode_image(source):
+                pytest.fail("Fragmented animation accepted")
+        else:
+            with images.decode_image(source) as result:
+                assert result.tobytes() == expected
+
+
+@pytest.mark.parametrize(
+    "explicit,composition,animated",
+    [
+        (True, (0, -40), False),
+        (True, (0, 0), True),
+        (False, (0, -40), False),
+        (False, (0, 0), True),
+    ],
+)
+def test_fragment_duration_defaults_and_signed_composition(
+    explicit, composition, animated
+):
+    images = image_module()
+    data = timeline(durations=())
+    movie = data[28:] + box(
+        b"mvex", box(b"trex", struct.pack(">6I", 0, 1, 1, 40, 0, 0))
+    )
+    data = data[:20] + box(b"moov", movie)
+    for index, offset in enumerate(composition):
+        header = box(b"tfhd", struct.pack(">II", 0, 1))
+        flags = 0x1000800 | (256 if explicit else 0)
+        values = struct.pack(">I", 40) if explicit else b""
+        run = box(
+            b"trun", struct.pack(">II", flags, 1) + values + struct.pack(">i", offset)
+        )
+        base = box(b"tfdt", struct.pack(">II", 0, 0)) if index == 0 else b""
+        data += box(b"moof", box(b"traf", header + base + run))
+    assert images.heif_is_animated(data) is animated
