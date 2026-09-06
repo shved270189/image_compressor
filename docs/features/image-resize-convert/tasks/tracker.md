@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|
 | T1 | [Bound multipart parsing](./bound-multipart-parsing.md) | ports | Tech Lead | 6h | — | done |
 | T2 | [Decode supported static images](./decode-supported-static-images.md) | domain | Tech Lead | 6h | — | done |
-| T3 | [Classify HEIF presentation timelines](./classify-heif-presentation-timelines.md) | domain | Tech Lead | 6h | T2 | todo |
+| T3 | [Classify HEIF presentation timelines](./classify-heif-presentation-timelines.md) | domain | Tech Lead | 6h | T2 | done |
 | T4 | [Handle fragmented HEIF timelines](./handle-fragmented-heif-timelines.md) | domain | Tech Lead | 6h | T3 | todo |
 | T5 | [Resize and normalize output](./resize-and-normalize-output.md) | domain | Tech Lead | 6h | T4 | todo |
 | T6 | [Preserve compatible color profiles](./preserve-compatible-color-profiles.md) | domain | Tech Lead | 8h | T5 | todo |
@@ -26,3 +26,4 @@ Tech Lead owns delivery; Security Lead accepts T12 security review and Project o
 
 - T1: RED missing `parse_image_request`; GREEN 41 parser/smoke tests. Frontend build/typecheck, Ruff and ESLint passed; application image build and live-container smoke passed. Mixed-case media type regression added after independent review. Parser diagnostic confidentiality remains assigned to T8/T12 before route exposure.
 - T2: RED decoding absent; GREEN 61 tests. Actual PNG pixel equality/overflow and post-decode limit failures covered; explicit Pillow core cleanup regression passed. Build/typecheck, Ruff, ESLint and Linux application-image primary HEIC decode passed. HEIF presentation rejection remains T3/T4 before route exposure.
+- T3: RED timeline classifier absent; GREEN 83 tests, build/typecheck, Ruff and ESLint passed. Linux real static/sequence controls passed. Independent review added reverse-edit and repeated-edit end-bound regressions. Fragmented timing remains T4.
