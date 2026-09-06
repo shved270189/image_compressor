@@ -34,8 +34,9 @@ header names/values to 16,384 bytes and each text field to 1,024 bytes.
 
 Implementation checks are recorded in the [task tracker](docs/features/image-resize-convert/tasks/tracker.md).
 The owner confirmed download/reset in iOS and desktop Safari/Firefox and accepted
-phone/desktop readability. Remaining browser failure/retry/interruption checks and
-Security Lead acceptance remain open; prior feasibility probes do not close those gates.
+phone/desktop readability. Independent Security Lead technical review passed.
+Firefox/WebKit engine checks and native Safari server-error retry passed; final
+real iPhone network-failure/retry acceptance remains open.
 
 ## Local development
 

@@ -1,6 +1,6 @@
 # Security and container acceptance — 2026-09-06
 
-Status: technical checks pass; Security Lead acceptance remains open.
+Status: PASS — independent agent Security Lead technical acceptance on 2026-09-06.
 
 ## Checks
 
@@ -37,6 +37,24 @@ commit `08698b0`; original sample alpha is expanded before resizing and unknown
 fragment track IDs are rejected. All prior color/HDR/timeline tests remain green.
 The review found no further confirmed ownership leak or private-data disclosure.
 
-This is code/test evidence, not native-code fuzzing, a throughput guarantee or a
-Security Lead signature. Formal acceptance must be recorded by the designated
-reviewer before T12 is marked done.
+## Independent Security Lead acceptance
+
+A separate read-only agent acting in the Security Lead role reviewed the T12
+requirements, specification/contract, backend HTTP and image functions, feature
+tests, dependency pins, Dockerfile and earlier container evidence. Result: PASS,
+no confirmed blocking defect. It independently ran
+`uv run pytest tests/test_images.py tests/test_images_api.py -q`: 179 passed in
+8.74s. Installed Pillow 12.3.0, pillow-heif 1.6.0, Starlette 1.6.0 and
+python-multipart 0.0.22 match pins; bindings report LittleCMS 2.19/libheif 1.23.2.
+
+The reviewer checked multipart boundaries, static content validation, pixel limits,
+worker/upload/image/response ownership, safe errors, fixed attachment names,
+metadata removal, absent persistent retrieval and the prior defect regressions.
+It reviewed existing Linux/container evidence without independently repeating it.
+
+This is explicitly independent agent technical acceptance, not human approval.
+T12 and SAD assign a Security Lead review role; neither requires an identified
+human signature. The earlier audit added that unsupported requirement, now
+corrected. Acceptance covers the specified personal workflow and does not certify
+native-code fuzzing, public deployment, unlimited concurrency or current
+third-party vulnerability status.

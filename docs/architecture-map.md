@@ -81,7 +81,7 @@ Uploads use request-scoped spooled `UploadFile` storage. Parsing limits file byt
 - **Components:** native accessible controls and React local state. Extract shared components only for actual reuse; no third-party component kit — `docs/adr/0002-single-service-and-kamal.md:25`.
 - **Styling:** Tailwind Vite plugin — `frontend/vite.config.ts:6`. Typography, warm background, dark text and green accent live in one token entry point — `frontend/src/index.css:3`. The feature must retain deliberate spacing and a clear primary action, with the form as the focus — `docs/idea-brief.md:47`.
 - **Motion:** the shell has CSS entry motion gated by reduced-motion preference — `frontend/src/index.css:21`. Controls use native labels, keyboard focus and a truthful busy state without percentages. One AbortController identifies the current request; complete Blob handoff happens once, then the result URL is revoked and the native file input resets. Recoverable errors preserve selection; pagehide invalidates work — `docs/idea-brief.md:49` and `docs/adr/0002-single-service-and-kamal.md:25`.
-- **Acceptance:** Chrome flow checks and native Safari/Firefox downloads are recorded in [browser acceptance](features/image-resize-convert/_audit/browser-acceptance.md). The owner confirmed download/reset on iOS and desktop Safari/Firefox and accepted phone/desktop readability. Remaining native-engine failure/retry/interruption checks stay open.
+- **Acceptance:** Chrome flow checks and native Safari/Firefox downloads are recorded in [browser acceptance](features/image-resize-convert/_audit/browser-acceptance.md). The owner confirmed download/reset on iOS and desktop Safari/Firefox and accepted phone/desktop readability. Firefox/WebKit engine failure/retry/interruption checks and native Safari server-error retry pass; final real iPhone network-failure/retry acceptance remains open.
 
 ## Root development commands
 
@@ -111,7 +111,7 @@ Kamal runs through `bundle exec kamal`. A future deployment configuration uses `
 - One image and one form; no batch processing, history, presets, cropping or stretching — `docs/idea-brief.md:28`.
 - Width and height are independently optional; preserve aspect ratio with no enlargement. A target output file size is outside this feature. The [feature spec](features/image-resize-convert/spec.md) narrows the broader idea brief.
 - Static JPEG/PNG/WebP/HEIC input becomes JPEG/PNG/WebP output. JPEG uses white behind alpha; metadata is stripped after orientation. HEIC primary-image selection and HDR-to-SDR normalization are implemented. Codec output dimensions above WebP 16,383 or JPEG 65,500 return actionable 422, as approved in the feature amendment.
-- Hosted CI, public deployment, full browser acceptance and Security Lead sign-off remain open. Android is owner-deferred; migrations are N/A.
+- Independent Security Lead technical review passed. Hosted CI, public deployment and final real iPhone network-failure/retry acceptance remain open. Android is owner-deferred; migrations are N/A.
 
 ## Reconciliation
 

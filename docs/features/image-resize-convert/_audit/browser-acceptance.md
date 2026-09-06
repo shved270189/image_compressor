@@ -13,8 +13,8 @@ application, not the previous feasibility probe.
 | Desktop Chrome | 360/1280px, 500-character unbroken error, keyboard Tab/Enter, reset focus, reduced motion | PASS; overflow defect fixed before acceptance |
 | Native macOS Safari 26.6.2 | PNG selection/preview, default JPEG processing, automatic download/reset/focus | PASS; Downloads reports result.jpg 637 bytes; Pillow decodes 32x16 JPEG |
 | Native macOS Firefox 155.0 | PNG selection/preview, width16, automatic JPEG download/reset | PASS; Downloads reports result(1).jpg 633 bytes; Pillow decodes 16x8 JPEG |
-| Native Safari/Firefox | Complete failure/retry, stale/duplicate, closure, both widths and reduced-motion matrix | OPEN; happy path alone is insufficient |
-| Real iPhone Safari and iOS Firefox | Download and form reset | PASS, owner-reported on the implemented LAN application; retry/closure matrix remains open |
+| Firefox 155.0 / WebKit 26.5 automation | Failure/retry, stale/duplicate, closure, both widths, reduced motion, keyboard | PASS; engine evidence, with native Safari server-error retry checked separately |
+| Real iPhone Safari and iOS Firefox | Download and form reset | PASS, owner-reported; final iPhone network retry pending. Other follow-ups did not identify a browser |
 | Project owner | Readability of labels, fields and buttons on phone and desktop | ACCEPTED by owner on 2026-09-06 |
 
 Chrome test scripts were run through the existing Playwright CLI in
@@ -25,10 +25,10 @@ accessibility setValue did not update React's width state in the happy-path chec
 that check therefore establishes default conversion, not resizing. Firefox used
 actual typing and verifies resizing.
 
-The pending matrix requires checking a corrupt input error and replacement,
+At the earlier checkpoint, the pending matrix required a corrupt input error and replacement,
 closing/reloading during processing, and opening the saved output. Repeated
 selection is owner-confirmed for the tested browser; its exact browser was not
-specified in the follow-up. Owner review must include the initial, selected and error states.
+specified in the follow-up. Owner readability acceptance is recorded below.
 Android remains deferred. Desktop viewport emulation is not real-device evidence.
 
 ## Owner verification — 2026-09-06
@@ -41,8 +41,9 @@ that labels, fields and buttons are readable on phone and desktop.
 
 This closes real-device happy-path verification and owner readability acceptance.
 It does not assert unreported failure/retry, interruption or
-reduced-motion checks on those browsers. The remaining matrix and Security Lead
-acceptance stay open; no application code was changed for the withdrawn report.
+reduced-motion checks on those browsers. At that checkpoint, the remaining matrix and Security Lead review were open;
+the final follow-up below supersedes that status. No application code was changed
+for the withdrawn report.
 
 The owner also selected and processed the same image twice consecutively and
 explicitly confirmed that both downloads completed and the form cleared after
@@ -58,3 +59,39 @@ The owner confirmed local dimension validation and correction: width 0 shows an
 error, and changing it to 100 allows a successful download. The exact browser
 was not specified. This verifies local validation recovery, not recovery from
 a server rejection or an interrupted response.
+
+## Final engine and native follow-up — 2026-09-06
+
+Existing Playwright CLI now has matching Firefox 155.0 and WebKit 26.5 engines.
+Only tool-managed browser runtimes were installed; project dependencies and test
+infrastructure did not change. Both engines pass the existing download/retry
+checks: exact output size/name, complete body before download, native reset/focus,
+zero live Blob URLs, one POST despite duplicate submits, safe structured 422
+messages and successful retry with retained input.
+
+Both pass controlled partial-body failure and stale completion after pagehide,
+360/1280px overflow checks, reduced-motion checks, keyboard submission, HEIC
+conversion to each output format, actual corrupt-content rejection and actual
+page closure with a request pending. Twelve downloaded files were independently
+decoded with Pillow and matched expected formats/dimensions. Firefox HEIC files
+use the original `heic.*` artifact names; WebKit files use `webkit-heic.*`.
+
+WebKit's first keyboard assertion failed because ordinary Tab skips buttons under
+its macOS keyboard-navigation defaults. Option+Tab reaches Process image with a
+visible outline; Enter submits and downloads. Re-running with that native keyboard
+sequence passes. No application change was required.
+
+Native Safari additionally passes real server-error recovery: a generated
+16,384x1 PNG to WebP returns actionable 422 and retains file/preview/format; entering
+width 100 and retrying downloads a complete 100x1 WebP, clears the form and focuses
+file selection. Pillow independently decoded the saved file.
+
+WebKit automation is engine evidence, not a claim of physical iPhone execution or
+Safari UI automation. Owner-reported native/mobile checks remain separately
+attributed above. A final real iPhone Safari network-failure/retained-input/retry
+check has been requested; its result is pending. Full acceptance is not claimed
+from the desktop engine alone.
+
+Firefox/WebKit selection checks also pass: exact byte boundaries, preview failure
+without blocked processing, old URL release, rapid replacement, exact long-bound
+text retention, no upload before submit and reload without restored selection.

@@ -15,7 +15,7 @@
 | T9 | [Build selection and local preview](./build-selection-and-local-preview.md) | ui | Tech Lead | 6h | — | done |
 | T10 | [Submit and download the current result](./submit-and-download-the-current-result.md) | ui | Tech Lead | 6h | T8, T9 | done |
 | T11 | [Verify browser acceptance](./verify-browser-acceptance.md) | tests | Tech Lead | 6h | T10 | review |
-| T12 | [Verify security and container behavior](./verify-security-and-container-behavior.md) | tests | Tech Lead | 6h | T8 | review |
+| T12 | [Verify security and container behavior](./verify-security-and-container-behavior.md) | tests | Tech Lead | 6h | T8 | done |
 | T13 | [Document the completed workflow](./document-the-completed-workflow.md) | docs | Tech Lead | 2h | T11, T12 | review |
 
 **Total:** 13 tasks, 78 hours, 9.75 person-days at 8 hours/day. Estimates exclude waiting for device access and owner/security sign-off.
@@ -23,6 +23,9 @@
 Tech Lead owns delivery; Security Lead accepts T12 security review and Project owner accepts T11 readable contrast. Tests and review are part of each estimate.
 
 ## Implementation evidence
+
+Chronological log: later entries supersede earlier pending/blocker statements.
+The task table above records current status.
 
 - T1: RED missing `parse_image_request`; GREEN 41 parser/smoke tests. Frontend build/typecheck, Ruff and ESLint passed; application image build and live-container smoke passed. Mixed-case media type regression added after independent review. Parser diagnostic confidentiality remains assigned to T8/T12 before route exposure.
 - T2: RED decoding absent; GREEN 61 tests. Actual PNG pixel equality/overflow and post-decode limit failures covered; explicit Pillow core cleanup regression passed. Build/typecheck, Ruff, ESLint and Linux application-image primary HEIC decode passed. HEIF presentation rejection remains T3/T4 before route exposure.
@@ -49,3 +52,6 @@ Tech Lead owns delivery; Security Lead accepts T12 security review and Project o
 - T11 owner reload check (2026-09-06): immediate reload after submission opens an empty form. Exact browser and in-flight timing unspecified; full interruption coverage is not inferred.
 
 - T11 owner validation check (2026-09-06): width 0 rejected visibly; correcting to 100 produces a download. Local validation recovery confirmed; server-error recovery and remaining browser matrix are not inferred.
+
+- T12 final: independent agent acting as Security Lead accepted the technical scope; 179 feature tests independently rerun, no confirmed blocking defects. T12/SAD do not require a human signature; prior unsupported signature wording corrected. T12 done.
+- T11 final follow-up: Firefox 155.0 and WebKit 26.5 pass download, retry, ownership, interruption, closure, keyboard/reduced-motion and responsive checks. Native Safari real 422 correction/retry also passes with independently decoded output. Real iPhone network-failure/retry result pending; engine/native evidence distinguished in audit.
