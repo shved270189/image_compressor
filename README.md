@@ -7,10 +7,16 @@ FastAPI serves the processing endpoint and built React frontend.
 
 1. Select a non-empty image up to 20,000,000 bytes. Preview stays local and is
    optional when the browser cannot display the format.
-2. Optionally set maximum width and height, and choose an output format (JPEG by
+2. Optionally set maximum width and height, an optional Size limit in Mb or Kb
+   (empty means no result byte bound), and choose an output format (JPEG by
    default). Empty dimensions impose no bound; images never enlarge or crop.
+   A supplied Size limit may shrink below those maxima to meet the budget. Size
+   limit is not the 20,000,000-byte upload cap.
 3. Process the image. Controls stay locked until the complete response arrives.
-   One result downloads automatically; the form clears for the next image.
+   When the bound is omitted or met, one result downloads automatically and the
+   form clears. When the bound cannot be met, the smallest file still downloads,
+   the form stays, and the actual size is shown so you can change settings and
+   retry.
 
 The server also enforces 40,000,000 decoded pixels, including equality. Dimensions
 must be positive whole pixel counts. Output sides above WebP's 16,383 or JPEG's
@@ -28,11 +34,11 @@ download handoff or page closure releases browser resources. The server retains
 no original or result for later retrieval; upload spools and image buffers are
 operation-scoped. Native work already running may finish before cleanup.
 
-The contract is [OpenAPI](docs/features/image-resize-convert/contracts/openapi.yaml).
+The contract is [OpenAPI](docs/features/image-size-limit/contracts/openapi.yaml).
 Multipart transport also limits the body to 20,065,536 bytes, cumulative part
 header names/values to 16,384 bytes and each text field to 1,024 bytes.
 
-Implementation checks are recorded in the [task tracker](docs/features/image-resize-convert/tasks/tracker.md).
+Implementation checks are recorded in the [task tracker](docs/features/image-size-limit/tasks/tracker.md).
 The owner confirmed download/reset in iOS and desktop Safari/Firefox and accepted
 phone/desktop readability. Independent Security Lead technical review passed.
 Firefox/WebKit engine checks and native Safari server-error retry passed. The

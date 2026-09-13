@@ -1,8 +1,8 @@
 ---
 status: current
 mode: current
-updated_at: "2026-09-12"
-reflects_commit: "86ac0c5"
+updated_at: "2026-09-13"
+reflects_commit: "787a257"
 language: "Python 3.14 + TypeScript"
 build_cmd: "npm --prefix frontend run build"
 test_cmd: "uv run pytest"
@@ -13,7 +13,7 @@ frontend: "React + Vite + TypeScript + Tailwind"
 
 # Architecture map — image-compressor
 
-The foundation and image-resize-convert implementation are materialized. [Feature tracker](features/image-resize-convert/tasks/tracker.md) records completed implementation and browser/security acceptance. [Scaffold tasks](features/_scaffold/tasks.json) retain setup evidence. Hosted GitHub Actions and public deployment remain unverified. Roadmap step 3 `image-size-limit` is an idea, not implemented.
+The foundation, image-resize-convert, and image-size-limit implementations are materialized. [Feature tracker](features/image-size-limit/tasks/tracker.md) records the optional Size limit work and browser acceptance. [Scaffold tasks](features/_scaffold/tasks.json) retain setup evidence. Hosted GitHub Actions and public deployment remain unverified.
 
 ## Stack
 
@@ -63,9 +63,9 @@ One image contains backend code and built frontend assets. The browser UI is a l
 ## Conventions
 
 - **Module wiring:** FastAPI entry point and health handler — `backend/main.py:5`. The processing handler calls ordinary functions in `backend/images.py` directly — `docs/adr/0002-single-service-and-kamal.md:13`.
-- **HTTP errors:** validate multipart fields manually at the HTTP boundary and return safe FastAPI errors. `POST /api/v1/images/process` returns complete binary output with attachment headers; its contract is `docs/features/image-resize-convert/contracts/openapi.yaml` — `docs/adr/0002-single-service-and-kamal.md:23`.
+- **HTTP errors:** validate multipart fields manually at the HTTP boundary and return safe FastAPI errors. `POST /api/v1/images/process` returns complete binary output with attachment headers and, when a Size limit was supplied, `X-Result-Bytes` and `X-Size-Limit-Met`; its contract is `docs/features/image-size-limit/contracts/openapi.yaml` — `docs/adr/0002-single-service-and-kamal.md:23`.
 - **Frontend serving:** `app.frontend` serves the build with fallback disabled, preserving API 404s — `backend/main.py:13`. Registration is conditional on the build directory so the API boots before a build exists. Restart the backend after the first build.
-- **Tests:** pytest and HTTPX check health, built HTML, emitted JS/CSS, a PNG→WebP process call and unknown API paths with JSON and HTML Accept headers — `tests/test_smoke.py:23`. `test_heic_notice_copy` pins the form HEIC/HDR disclaimer — `tests/test_smoke.py:18` and `frontend/src/App.tsx:189`. `oriented-exif6.jpg` is the Preview/download orientation control — `tests/fixtures/images/README.md:18`. `SMOKE_BASE_URL` runs the same scenarios against a live container. Ruff, TypeScript and ESLint provide static checks.
+- **Tests:** pytest and HTTPX check health, built HTML, emitted JS/CSS, a PNG→WebP process call without miss headers, a size_limit-only JPEG, and unknown API paths with JSON and HTML Accept headers — `tests/test_smoke.py:49`. `test_heic_notice_copy` and `test_size_limit_form_copy` pin form copy — `tests/test_smoke.py:21`. `oriented-exif6.jpg` is the Preview/download orientation control — `tests/fixtures/images/README.md:18`. `SMOKE_BASE_URL` runs the same scenarios against a live container. Ruff, TypeScript and ESLint provide static checks.
 - **UI communication:** browser processing uses relative `/api/v1/images/process` fetch calls. Vite proxies `/api` to the backend — `frontend/vite.config.ts:8`. Use React local state; no global store, server-cache library or client router.
 
 ## Datastores
@@ -76,11 +76,11 @@ Uploads use request-scoped spooled `UploadFile` storage. Parsing limits file byt
 
 ## Frontend / UI foundation
 
-- **Closest precedent:** `frontend/src/App.tsx` owns the single form with independently optional dimension limits and JPEG/PNG/WebP selection. Local preview URLs are revoked on replacement, failure, success and teardown. The HEIC primary-image/HDR disclaimer sits under the format field — `frontend/src/App.tsx:189`. A new file-size control would extend this fieldset, not a second screen — `frontend/src/App.tsx:177`.
+- **Closest precedent:** `frontend/src/App.tsx` owns the single form with independently optional dimension limits, optional Size limit (Mb/Kb radios left of the number) and JPEG/PNG/WebP selection. Local preview URLs are revoked on replacement, failure, success and teardown. A miss keeps the form and shows actual bytes; a met or omitted bound downloads once then resets. The HEIC primary-image/HDR disclaimer sits under the format field — `frontend/src/App.tsx:223`.
 - **Components:** native accessible controls and React local state. Extract shared components only for actual reuse; no third-party component kit — `docs/adr/0002-single-service-and-kamal.md:25`.
 - **Styling:** Tailwind Vite plugin — `frontend/vite.config.ts:6`. Typography, canvas, ink, muted and accent tokens live in `@theme` — `frontend/src/index.css:3`. Surface, line and danger tokens are a second `@theme` block — `frontend/src/index.css:28`. The feature must retain deliberate spacing and a clear primary action, with the form as the focus — `docs/idea-brief.md:47`.
 - **Motion:** CSS entry motion runs only under `prefers-reduced-motion: no-preference` — `frontend/src/index.css:17`. `prefers-reduced-motion: reduce` disables animation and transition — `frontend/src/index.css:45`. Controls use native labels, keyboard focus and a truthful busy state without percentages. One AbortController identifies the current request; complete Blob handoff happens once, then the result URL is revoked and the native file input resets. Recoverable errors preserve selection; pagehide invalidates work — `docs/idea-brief.md:49` and `docs/adr/0002-single-service-and-kamal.md:25`.
-- **Acceptance:** Chrome flow checks and native Safari/Firefox downloads are recorded in [browser acceptance](features/image-resize-convert/_audit/browser-acceptance.md). The owner confirmed download/reset on iOS and desktop Safari/Firefox and accepted phone/desktop readability. Firefox/WebKit engine failure/retry/interruption checks and native Safari server-error retry pass; the owner confirmed real iPhone Safari network-failure/retry and form reset.
+- **Acceptance:** Chrome flow checks and native Safari/Firefox downloads are recorded in [browser acceptance](features/image-resize-convert/_audit/browser-acceptance.md). Size limit, miss keep-form and 360/1280 overflow are recorded in [image-size-limit browser acceptance](features/image-size-limit/_audit/browser-acceptance.md). The owner confirmed download/reset on iOS and desktop Safari/Firefox and accepted phone/desktop readability. Firefox/WebKit engine failure/retry/interruption checks and native Safari server-error retry pass; the owner confirmed real iPhone Safari network-failure/retry and form reset.
 
 ## Root development commands
 

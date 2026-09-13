@@ -12,6 +12,6 @@
 | T5 | Download on miss or met-limit without stale work | ui | Tech Lead | M | T3, T4 | done |
 | T6 | Extend smoke coverage for the size-limit contract | tests | Tech Lead | S | T3, T4 | done |
 | T7 | Verify browser acceptance of Size limit and miss | tests | Tech Lead | M | T5 | done |
-| T8 | Document the optional size-limit workflow | docs | Tech Lead | S | T6, T7 | todo |
+| T8 | Document the optional size-limit workflow | docs | Tech Lead | S | T6, T7 | done |
 
 **Total:** 8 tasks, ~4 person-days.
