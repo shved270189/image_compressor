@@ -8,6 +8,7 @@ export default function App() {
   const [sizeUnit, setSizeUnit] = useState('mb')
   const [format, setFormat] = useState('jpeg')
   const [error, setError] = useState('')
+  const [miss, setMiss] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [invalid, setInvalid] = useState<string[]>([])
   const operation = useRef<AbortController | null>(null)
@@ -46,6 +47,7 @@ export default function App() {
       setSizeUnit('mb')
       setFormat('jpeg')
       setError('')
+      setMiss(null)
       setInvalid([])
       setBusy(false)
     }
@@ -65,6 +67,7 @@ export default function App() {
     setSizeUnit('mb')
     setFormat('jpeg')
     setError('')
+    setMiss(null)
     setInvalid([])
     if (!selected) return
     if (selected.size === 0 || selected.size > 20_000_000) {
@@ -93,6 +96,7 @@ export default function App() {
     }
     setInvalid(bad)
     setError('')
+    setMiss(null)
     if (bad.length) {
       setError(bad.includes('size_limit')
         ? 'Ліміт ваги must be a positive number with Mb or Kb or left empty'
@@ -106,6 +110,10 @@ export default function App() {
     body.append('file', file)
     if (width) body.append('max_width', width)
     if (height) body.append('max_height', height)
+    if (sizeLimit) {
+      body.append('size_limit', sizeLimit)
+      body.append('size_unit', sizeUnit)
+    }
     body.append('output_format', format)
     try {
       const response = await fetch('/api/v1/images/process', { method: 'POST', body, signal: current.signal })
@@ -126,7 +134,7 @@ export default function App() {
               if (!entry || typeof entry !== 'object') continue
               if (typeof entry.msg === 'string') messages.push(entry.msg)
               if (Array.isArray(entry.loc)) fields = fields.concat(entry.loc.filter((name: unknown) =>
-                typeof name === 'string' && ['file', 'max_width', 'max_height', 'output_format'].includes(name)))
+                typeof name === 'string' && ['file', 'max_width', 'max_height', 'output_format', 'size_limit', 'size_unit'].includes(name)))
             }
             if (messages.length) message = messages.join(' ')
           }
@@ -149,11 +157,19 @@ export default function App() {
       } finally {
         URL.revokeObjectURL(url)
       }
-      selectFile(null)
-      if (fileInput.current) {
-        fileInput.current.value = ''
-        fileInput.current.disabled = false
-        fileInput.current.focus()
+      const header = response.headers.get('x-size-limit-met')
+      const resultBytes = Number(response.headers.get('x-result-bytes')) || blob.size
+      const met = !sizeLimit || header === 'true' || (header !== 'false'
+        && blob.size <= Math.trunc(Number(sizeLimit) * (sizeUnit === 'mb' ? 1_048_576 : 1024)))
+      if (met) {
+        selectFile(null)
+        if (fileInput.current) {
+          fileInput.current.value = ''
+          fileInput.current.disabled = false
+          fileInput.current.focus()
+        }
+      } else {
+        setMiss(resultBytes)
       }
     } catch {
       if (operation.current === current) setError('The transfer failed. Please try again.')
@@ -185,6 +201,7 @@ export default function App() {
             <input ref={fileInput} id="image" type="file" disabled={busy} accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" aria-describedby="file-help file-error" aria-invalid={invalid.includes('file') || (!file && Boolean(error))} onChange={(event) => selectFile(event.target.files?.[0] ?? null)} className="block w-full min-w-0 rounded-xl border border-dashed border-line bg-canvas p-4 text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-ink file:px-4 file:py-2 file:font-medium file:text-white" />
             <p id="file-help" className="mt-2 text-xs text-muted">A preview appears when your browser supports the image.</p>
             <p id="file-error" role="alert" className="mt-2 break-all text-sm text-danger">{error}</p>
+            {miss !== null && <p role="status" aria-live="polite" className="mt-2 text-sm">The result is {miss} bytes. The size limit was exceeded.</p>}
             <fieldset disabled={!file || busy} className="mt-7 disabled:opacity-50">
               <legend className="mb-3 text-sm font-semibold">Maximum dimensions <span className="font-normal text-muted">· optional</span></legend>
               <div className="grid grid-cols-2 gap-4">

@@ -33,6 +33,19 @@ def test_size_limit_form_copy():
     assert source.index('value="kb"') < number
 
 
+def test_size_limit_miss_and_submit_wiring():
+    source = Path("frontend/src/App.tsx").read_text()
+    assert "body.append('size_limit', sizeLimit)" in source
+    assert "body.append('size_unit', sizeUnit)" in source
+    assert "x-size-limit-met" in source
+    assert "x-result-bytes" in source
+    assert "The result is " in source
+    assert "The size limit was exceeded." in source
+    assert 'aria-live="polite"' in source
+    assert "size_limit" in source and "size_unit" in source
+    assert "setMiss(" in source
+
+
 def test_skeleton():
     async def check():
         base_url = os.environ.get("SMOKE_BASE_URL")
