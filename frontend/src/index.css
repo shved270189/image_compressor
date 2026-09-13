@@ -17,6 +17,8 @@ body {
 @media (prefers-reduced-motion: no-preference) {
   main {
     animation: enter 300ms ease-out;
+    /* Enter translateY otherwise accumulates 8px scrollY on each reload. */
+    overflow-anchor: none;
   }
 
   @keyframes enter {
