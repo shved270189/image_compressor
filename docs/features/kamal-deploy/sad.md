@@ -11,6 +11,8 @@ target_surfaces: [cli]
 
 The owner approved depth easy, size S and route quick. Documents remain English, matching this feature folder. Canonical domain terms are in [CONTEXT.md](./CONTEXT.md). This document records architecture only; it does not run a live publish.
 
+**Design review — 2026-09-13.** All twelve sections were written through the easy-depth design walk. An independent clean-context critic reviewed the written SAD and two ADRs and returned `NO_CONTESTED_DECISIONS`. All three Mermaid blocks rendered with `mmdc`. Structural checks confirmed the section count, declared `cli` surface, Accepted ADRs, closed ADR index and absence of template placeholders. All spec §6 NFR targets match verbatim.
+
 ## 1. Introduction and goals
 
 **Intent.** Give the Project owner a complete committed Deploy configuration — the Kamal publish recipe with the known non-secret host facts — and a local Configuration check that proves that recipe is readable and complete without contacting the production host or the container registry. Secret values stay in the local Secrets file. Live publish, host provisioning, DNS and certificates stay later. The Image owner's compression form does not change.
