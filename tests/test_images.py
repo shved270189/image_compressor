@@ -22,6 +22,14 @@ def encoded(format="PNG", size=(12, 8), mode="RGB", color="red", **options):
         return stream.getvalue()
 
 
+def noisy(size=(2400, 1200)):
+    width, height = size
+    payload = bytes((index * 37) % 256 for index in range(width * height * 3))
+    with Image.frombytes("RGB", size, payload) as image, io.BytesIO() as stream:
+        image.save(stream, "PNG")
+        return stream.getvalue()
+
+
 @pytest.mark.parametrize("format", ["JPEG", "PNG", "WEBP", "HEIF"])
 def test_decode_supported_content(format):
     images = image_module()
@@ -588,3 +596,50 @@ def test_orphan_fragment_is_rejected(has_movie):
             images.decode_image(source),
         ):
             pytest.fail("Orphan fragment accepted during decoding")
+
+
+def test_omitted_size_limit_keeps_largest_proportional_fit():
+    images = image_module()
+    with io.BytesIO(encoded(size=(2400, 1200))) as source:
+        data = images.process_image(source, 1200, None, "png", size_limit_bytes=None)
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.size == (1200, 600)
+
+
+def test_extra_shrink_undercuts_ceiling_while_preserving_aspect():
+    images = image_module()
+    source_bytes = noisy()
+    with io.BytesIO(source_bytes) as source:
+        ceiling = images.process_image(source, 1200, None, "jpeg")
+    bound = len(ceiling) - 1
+    with io.BytesIO(source_bytes) as source:
+        data = images.process_image(source, 1200, None, "jpeg", size_limit_bytes=bound)
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.format == "JPEG"
+        assert result.size[0] < 1200
+        assert result.size == images.output_size((2400, 1200), result.size[0], None)
+    assert len(data) <= bound
+
+
+def test_one_pixel_miss_still_returns_encoded_file():
+    images = image_module()
+    with io.BytesIO(noisy()) as source:
+        data = images.process_image(source, 1200, None, "jpeg", size_limit_bytes=1)
+    assert data
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.format == "JPEG"
+        assert result.size == images.output_size((2400, 1200), 1, None)
+    assert len(data) > 1
+
+
+def test_size_limit_comparison_uses_whole_encoded_bytes():
+    images = image_module()
+    source_bytes = noisy()
+    with io.BytesIO(source_bytes) as source:
+        ceiling = images.process_image(source, 1200, None, "jpeg")
+    bound = len(ceiling)
+    with io.BytesIO(source_bytes) as source:
+        data = images.process_image(source, 1200, None, "jpeg", size_limit_bytes=bound)
+    assert len(data) <= bound
+    with Image.open(io.BytesIO(data)) as result:
+        assert result.size == (1200, 600)

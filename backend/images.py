@@ -390,7 +390,9 @@ def output_size(size, max_width=None, max_height=None):
     )
 
 
-def process_image(source, max_width=None, max_height=None, output_format="jpeg"):
+def process_image(
+    source, max_width=None, max_height=None, output_format="jpeg", size_limit_bytes=None
+):
     with decode_image(source) as image, ExitStack() as stack:
         size = output_size(image.size, max_width, max_height)
         limit = {"webp": 16_383, "jpeg": 65_500}.get(output_format)
@@ -400,30 +402,87 @@ def process_image(source, max_width=None, max_height=None, output_format="jpeg")
                 "Reduce maximum width or height and try again."
             )
         normalized, profile = stack.enter_context(normalize_color(image))
-        result = stack.enter_context(
-            closing(
-                normalized.resize(
-                    size,
-                    Image.Resampling.LANCZOS,
+        original = image.size
+
+        def encode(target, quality=None, *, webp_lossless=True, compress_level=None):
+            with ExitStack() as local:
+                result = local.enter_context(
+                    closing(normalized.resize(target, Image.Resampling.LANCZOS))
                 )
+                has_alpha = "A" in result.getbands()
+                if output_format == "jpeg" and has_alpha:
+                    white = local.enter_context(
+                        closing(Image.new("RGBA", result.size, "white"))
+                    )
+                    composite = local.enter_context(
+                        closing(Image.alpha_composite(white, result))
+                    )
+                    result = local.enter_context(closing(composite.convert("RGB")))
+                result.info.clear()
+                options = {"icc_profile": profile} if profile else {}
+                if output_format == "webp":
+                    options["lossless"] = webp_lossless
+                    if not webp_lossless and quality is not None:
+                        options["quality"] = quality
+                elif output_format == "jpeg" and quality is not None:
+                    options["quality"] = quality
+                elif output_format == "png" and compress_level is not None:
+                    options["compress_level"] = compress_level
+                with io.BytesIO() as output:
+                    result.save(output, format=output_format.upper(), **options)
+                    return output.getvalue()
+
+        data = encode(size)
+        if size_limit_bytes is None or len(data) <= size_limit_bytes:
+            return data
+
+        def candidate(width, quality=None, **options):
+            return encode(output_size(original, width, max_height), quality, **options)
+
+        def min_encode(width):
+            if output_format == "jpeg":
+                return candidate(width, 1)
+            if output_format == "webp":
+                return candidate(width, 1, webp_lossless=False)
+            return candidate(width, compress_level=9)
+
+        def largest_fit(encode_at):
+            low, high, best_width, best = 1, size[0], None, None
+            while low <= high:
+                mid = (low + high) // 2
+                probe = encode_at(mid)
+                if len(probe) <= size_limit_bytes:
+                    best_width, best = mid, probe
+                    low = mid + 1
+                else:
+                    high = mid - 1
+            return best_width, best
+
+        _, best = largest_fit(candidate)
+        if best is not None:
+            return best
+
+        smallest = min_encode(1)
+        if len(smallest) > size_limit_bytes:
+            return smallest
+
+        best_width, best = largest_fit(min_encode)
+        if output_format == "png" or best is None:
+            return best or smallest
+        low, high = 1, 80 if output_format == "webp" else 75
+        while low <= high:
+            mid = (low + high) // 2
+            probe = (
+                candidate(best_width, mid, webp_lossless=False)
+                if output_format == "webp"
+                else candidate(best_width, mid)
             )
-        )
-        has_alpha = "A" in result.getbands()
-        if output_format == "jpeg" and has_alpha:
-            white = stack.enter_context(
-                closing(Image.new("RGBA", result.size, "white"))
-            )
-            composite = stack.enter_context(
-                closing(Image.alpha_composite(white, result))
-            )
-            result = stack.enter_context(closing(composite.convert("RGB")))
-        result.info.clear()
-        options = {"icc_profile": profile} if profile else {}
-        if output_format == "webp":
-            options["lossless"] = True
-        with io.BytesIO() as output:
-            result.save(output, format=output_format.upper(), **options)
-            return output.getvalue()
+            if len(probe) <= size_limit_bytes:
+                best = probe
+                low = mid + 1
+            else:
+                high = mid - 1
+        return best
 
 
 class Chromaticity(ctypes.Structure):
