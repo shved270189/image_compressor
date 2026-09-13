@@ -4,6 +4,8 @@ export default function App() {
   const [file, setFile] = useState<File | null>(null)
   const [width, setWidth] = useState('')
   const [height, setHeight] = useState('')
+  const [sizeLimit, setSizeLimit] = useState('')
+  const [sizeUnit, setSizeUnit] = useState('mb')
   const [format, setFormat] = useState('jpeg')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -40,6 +42,8 @@ export default function App() {
       setPreview(null)
       setWidth('')
       setHeight('')
+      setSizeLimit('')
+      setSizeUnit('mb')
       setFormat('jpeg')
       setError('')
       setInvalid([])
@@ -57,6 +61,8 @@ export default function App() {
     setFile(null)
     setWidth('')
     setHeight('')
+    setSizeLimit('')
+    setSizeUnit('mb')
     setFormat('jpeg')
     setError('')
     setInvalid([])
@@ -82,10 +88,15 @@ export default function App() {
     const bad = [['max_width', width], ['max_height', height]]
       .filter(([, value]) => value !== '' && (!/^[0-9]+$/.test(value) || !/[1-9]/.test(value)))
       .map(([name]) => name)
+    if (sizeLimit !== '' && (!/^(?:\d+\.?\d*|\.\d+)$/.test(sizeLimit) || !(Number(sizeLimit) > 0))) {
+      bad.push('size_limit')
+    }
     setInvalid(bad)
     setError('')
     if (bad.length) {
-      setError('Dimensions must be positive whole pixel counts, or blank.')
+      setError(bad.includes('size_limit')
+        ? 'Ліміт ваги must be a positive number with Mb or Kb or left empty'
+        : 'Dimensions must be positive whole pixel counts, or blank.')
       return
     }
     const current = new AbortController()
@@ -181,6 +192,12 @@ export default function App() {
                 <div><label htmlFor="height" className="mb-2 block text-sm">Height (px)</label><input id="height" inputMode="numeric" value={height} onChange={(event) => setHeight(event.target.value)} placeholder="Original" aria-describedby="dimension-help file-error" aria-invalid={invalid.includes('max_height')} className="field" /></div>
               </div>
               <p id="dimension-help" className="mt-2 text-xs leading-relaxed text-muted">Leave either blank to keep it unconstrained. The whole image fits within your limits.</p>
+              <label htmlFor="size-limit" className="mb-2 mt-6 block text-sm font-semibold">Size limit <span className="font-normal text-muted">· optional</span></label>
+              <div className="flex min-w-0 items-center gap-3">
+                <label className="flex items-center gap-2 text-sm"><input type="radio" name="size-unit" value="mb" checked={sizeUnit === 'mb'} onChange={() => setSizeUnit('mb')} />Mb</label>
+                <label className="flex items-center gap-2 text-sm"><input type="radio" name="size-unit" value="kb" checked={sizeUnit === 'kb'} onChange={() => setSizeUnit('kb')} />Kb</label>
+                <input id="size-limit" inputMode="decimal" value={sizeLimit} onChange={(event) => setSizeLimit(event.target.value)} placeholder="None" aria-describedby="file-error" aria-invalid={invalid.includes('size_limit')} className="field min-w-0 flex-1" />
+              </div>
               <label htmlFor="format" className="mb-2 mt-6 block text-sm font-semibold">Output format</label>
               <select id="format" aria-describedby="file-error" aria-invalid={invalid.includes('output_format')} value={format} onChange={(event) => setFormat(event.target.value)} className="field"><option value="jpeg">JPEG</option><option value="png">PNG</option><option value="webp">WebP</option></select>
             </fieldset>

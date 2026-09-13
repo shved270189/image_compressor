@@ -13,11 +13,24 @@ HEIC_NOTICE = (
     "HEIC: only the primary image is used; extra images are omitted. "
     "HDR becomes ordinary 8-bit output and may not retain its original appearance."
 )
+SIZE_LIMIT_ERROR = (
+    "Ліміт ваги must be a positive number with Mb or Kb or left empty"
+)
 
 
 def test_heic_notice_copy():
     source = Path("frontend/src/App.tsx").read_text()
     assert HEIC_NOTICE in source
+
+
+def test_size_limit_form_copy():
+    source = Path("frontend/src/App.tsx").read_text()
+    assert "Size limit" in source
+    assert SIZE_LIMIT_ERROR in source
+    assert 'type="radio"' in source
+    number = source.index('id="size-limit"')
+    assert source.index('value="mb"') < number
+    assert source.index('value="kb"') < number
 
 
 def test_skeleton():
