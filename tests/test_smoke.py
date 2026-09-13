@@ -16,6 +16,7 @@ HEIC_NOTICE = (
 SIZE_LIMIT_ERROR = (
     "Ліміт ваги must be a positive number with Mb or Kb or left empty"
 )
+SIZE_LIMIT_HELP = "Leave empty for no result size bound."
 
 
 def test_heic_notice_copy():
@@ -27,10 +28,13 @@ def test_size_limit_form_copy():
     source = Path("frontend/src/App.tsx").read_text()
     assert "Size limit" in source
     assert SIZE_LIMIT_ERROR in source
+    assert SIZE_LIMIT_HELP in source
+    assert 'id="size-limit-help"' in source
     assert 'type="radio"' in source
     number = source.index('id="size-limit"')
     assert source.index('value="mb"') < number
     assert source.index('value="kb"') < number
+    assert 'aria-describedby="size-limit-help file-error"' in source
 
 
 def test_size_limit_miss_and_submit_wiring():

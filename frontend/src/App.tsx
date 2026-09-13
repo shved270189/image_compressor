@@ -213,8 +213,9 @@ export default function App() {
               <div className="flex min-w-0 items-center gap-3">
                 <label className="flex items-center gap-2 text-sm"><input type="radio" name="size-unit" value="mb" checked={sizeUnit === 'mb'} onChange={() => setSizeUnit('mb')} />Mb</label>
                 <label className="flex items-center gap-2 text-sm"><input type="radio" name="size-unit" value="kb" checked={sizeUnit === 'kb'} onChange={() => setSizeUnit('kb')} />Kb</label>
-                <input id="size-limit" inputMode="decimal" value={sizeLimit} onChange={(event) => setSizeLimit(event.target.value)} placeholder="None" aria-describedby="file-error" aria-invalid={invalid.includes('size_limit')} className="field min-w-0 flex-1" />
+                <input id="size-limit" inputMode="decimal" value={sizeLimit} onChange={(event) => setSizeLimit(event.target.value)} placeholder="None" aria-describedby="size-limit-help file-error" aria-invalid={invalid.includes('size_limit')} className="field min-w-0 flex-1" />
               </div>
+              <p id="size-limit-help" className="mt-2 text-xs leading-relaxed text-muted">Leave empty for no result size bound.</p>
               <label htmlFor="format" className="mb-2 mt-6 block text-sm font-semibold">Output format</label>
               <select id="format" aria-describedby="file-error" aria-invalid={invalid.includes('output_format')} value={format} onChange={(event) => setFormat(event.target.value)} className="field"><option value="jpeg">JPEG</option><option value="png">PNG</option><option value="webp">WebP</option></select>
             </fieldset>
