@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+from decimal import Decimal
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -38,7 +39,7 @@ class ImageMultipartParser(MultiPartParser):
             headers,
             bounded_body(source),
             max_files=1,
-            max_fields=3,
+            max_fields=5,
             max_part_size=MAX_FIELD_BYTES,
         )
         self.complete = False
@@ -64,7 +65,14 @@ class ImageMultipartParser(MultiPartParser):
         name = options.get(b"name")
         if name is None:
             raise HTTPException(400, "Malformed multipart request.")
-        if name not in {b"file", b"max_width", b"max_height", b"output_format"}:
+        if name not in {
+            b"file",
+            b"max_width",
+            b"max_height",
+            b"output_format",
+            b"size_limit",
+            b"size_unit",
+        }:
             raise HTTPException(422, "Unexpected form field.")
         if name in self.names:
             raise HTTPException(422, "Duplicate form field.")
@@ -122,11 +130,33 @@ async def parse_image_request(request: Request):
                 )
             dimensions.append(int(value) if value else None)
         output_format = form.get("output_format")
-        if output_format is None and not any(dimensions):
-            raise HTTPException(422, "Supply dimensions or an output format.")
+        size_limit = form.get("size_limit") or ""
+        size_unit = form.get("size_unit") or ""
+        size_limit_bytes = None
+        if size_limit:
+            if (
+                not re.fullmatch(r"(?:\d+\.?\d*|\.\d+)", size_limit)
+                or not Decimal(size_limit) > 0
+            ):
+                raise HTTPException(
+                    422,
+                    "size_limit must be a positive number with mb or kb or left empty.",
+                )
+            if not size_unit:
+                raise HTTPException(422, "size_limit requires size_unit mb or kb.")
+            if size_unit not in {"mb", "kb"}:
+                raise HTTPException(422, "size_unit must be mb or kb.")
+            size_limit_bytes = int(
+                Decimal(size_limit)
+                * Decimal(1_048_576 if size_unit == "mb" else 1024)
+            )
+        if output_format is None and not any(dimensions) and size_limit_bytes is None:
+            raise HTTPException(
+                422, "Supply dimensions, an output format or a size limit."
+            )
         if output_format is not None and output_format not in {"jpeg", "png", "webp"}:
             raise HTTPException(422, "Choose JPEG, PNG or WebP.")
-        return upload, *dimensions, output_format or "jpeg"
+        return upload, *dimensions, output_format or "jpeg", size_limit_bytes
     except BaseException:
         for _, value in form.multi_items():
             if isinstance(value, UploadFile):
@@ -151,12 +181,16 @@ class ImageResponse(Response):
     "/api/v1/images/process", operation_id="processImage", response_class=ImageResponse
 )
 async def process_image(request: Request):
-    upload, width, height, output_format = await parse_image_request(request)
+    upload, width, height, output_format, size_limit_bytes = await parse_image_request(
+        request
+    )
 
     def work():
         with upload.file:
             try:
-                return images.process_image(upload.file, width, height, output_format)
+                return images.process_image(
+                    upload.file, width, height, output_format, size_limit_bytes
+                )
             except images.ImageTooLarge:
                 raise HTTPException(413, "Image exceeds 40,000,000 pixels.") from None
             except images.UnsupportedImage:

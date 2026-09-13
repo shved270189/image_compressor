@@ -64,11 +64,19 @@ def handles(monkeypatch):
 @pytest.mark.parametrize(
     "fields,expected",
     [
-        ([("output_format", "png")], (None, None, "png")),
-        ([("max_width", "1200")], (1200, None, "jpeg")),
-        ([("max_height", "300")], (None, 300, "jpeg")),
-        ([("max_width", ""), ("output_format", "webp")], (None, None, "webp")),
-        ([("max_width", "9" * 1024)], (int("9" * 1024), None, "jpeg")),
+        ([("output_format", "png")], (None, None, "png", None)),
+        ([("max_width", "1200")], (1200, None, "jpeg", None)),
+        ([("max_height", "300")], (None, 300, "jpeg", None)),
+        ([("max_width", ""), ("output_format", "webp")], (None, None, "webp", None)),
+        ([("max_width", "9" * 1024)], (int("9" * 1024), None, "jpeg", None)),
+        ([("size_limit", ""), ("max_width", "1200")], (1200, None, "jpeg", None)),
+        ([("size_limit", ""), ("size_unit", "kb"), ("output_format", "png")], (None, None, "png", None)),
+        ([("size_limit", "0.5"), ("size_unit", "mb")], (None, None, "jpeg", 524_288)),
+        ([("size_limit", "200"), ("size_unit", "kb")], (None, None, "jpeg", 204_800)),
+        (
+            [("size_limit", "0.5"), ("size_unit", "mb"), ("max_width", "1200")],
+            (1200, None, "jpeg", 524_288),
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -79,11 +87,13 @@ def test_parameters(fields, expected, handles, content_type):
     async def check():
         parts = [("file", b"image", "private.png")]
         parts += [(name, value.encode(), None) for name, value in fields]
-        upload, width, height, output_format = await main.parse_image_request(
-            request(multipart(parts), content_type=content_type)
+        upload, width, height, output_format, size_limit_bytes = (
+            await main.parse_image_request(
+                request(multipart(parts), content_type=content_type)
+            )
         )
         try:
-            assert (width, height, output_format) == expected
+            assert (width, height, output_format, size_limit_bytes) == expected
             assert await upload.read() == b"image"
         finally:
             await upload.close()
@@ -117,6 +127,13 @@ def test_parameters(fields, expected, handles, content_type):
         ),
         ([("file", b"image", "private.png"), ("unknown", b"x", None)], 422),
         ([("file", b"image", None), ("output_format", b"png", None)], 422),
+        *[
+            ([("file", b"image", "private.png"), ("size_limit", value, None), ("size_unit", b"mb", None)], 422)
+            for value in (b"0", b"-1", b"abc", b"1e3", b"nan")
+        ],
+        ([("file", b"image", "private.png"), ("size_limit", b"0.5", None)], 422),
+        ([("file", b"image", "private.png"), ("size_limit", b"0.5", None), ("size_unit", b"gb", None)], 422),
+        ([("file", b"image", "private.png"), ("size_unit", b"mb", None)], 422),
     ],
 )
 def test_parameter_rejections(parts, status, handles):
@@ -124,6 +141,26 @@ def test_parameter_rejections(parts, status, handles):
         asyncio.run(main.parse_image_request(request(multipart(parts))))
     assert caught.value.status_code == status
     assert "private.png" not in str(caught.value.detail)
+
+
+@pytest.mark.parametrize(
+    "fields,detail",
+    [
+        ([("size_limit", "0"), ("size_unit", "mb")], "size_limit must be a positive number with mb or kb or left empty."),
+        ([("size_limit", "-1"), ("size_unit", "kb")], "size_limit must be a positive number with mb or kb or left empty."),
+        ([("size_limit", "nope"), ("size_unit", "mb")], "size_limit must be a positive number with mb or kb or left empty."),
+        ([("size_limit", "0.5")], "size_limit requires size_unit mb or kb."),
+        ([("size_limit", "0.5"), ("size_unit", "gb")], "size_unit must be mb or kb."),
+        ([], "Supply dimensions, an output format or a size limit."),
+    ],
+)
+def test_size_limit_rejection_copy(fields, detail, handles):
+    parts = [("file", b"image", "private.png")]
+    parts += [(name, value.encode(), None) for name, value in fields]
+    with pytest.raises(HTTPException) as caught:
+        asyncio.run(main.parse_image_request(request(multipart(parts))))
+    assert caught.value.status_code == 422
+    assert caught.value.detail == detail
 
 
 @pytest.mark.parametrize("size", [19_999_999, 20_000_000, 20_000_001])
@@ -223,6 +260,30 @@ def test_processing_endpoint(input_format, output_format, handles):
         )
         with Image.open(io.BytesIO(response.content)) as image:
             assert image.size == (6, 4) and image.format == output_format.upper()
+
+    asyncio.run(check())
+
+
+def test_size_limit_only_jpeg_is_enough_to_process(handles):
+    import io
+
+    import httpx
+    from PIL import Image
+
+    async def check():
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=main.app), base_url="http://test"
+        ) as client:
+            response = await client.post(
+                "/api/v1/images/process",
+                files={"file": ("input.png", valid_image(), "image/png")},
+                data={"size_limit": "0.5", "size_unit": "mb"},
+            )
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "image/jpeg"
+        with Image.open(io.BytesIO(response.content)) as image:
+            assert image.format == "JPEG"
+            assert len(response.content) <= 524_288
 
     asyncio.run(check())
 
