@@ -219,10 +219,16 @@ async def process_image(request: Request):
     )
     output = await asyncio.shield(future)
     extension = "jpg" if output_format == "jpeg" else output_format
+    headers = {"Content-Disposition": f'attachment; filename="result.{extension}"'}
+    if size_limit_bytes is not None:
+        headers["X-Result-Bytes"] = str(len(output))
+        headers["X-Size-Limit-Met"] = (
+            "true" if len(output) <= size_limit_bytes else "false"
+        )
     return ImageResponse(
         output,
         media_type=f"image/{output_format}",
-        headers={"Content-Disposition": f'attachment; filename="result.{extension}"'},
+        headers=headers,
     )
 
 

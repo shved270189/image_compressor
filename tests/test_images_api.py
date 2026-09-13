@@ -264,6 +264,68 @@ def test_processing_endpoint(input_format, output_format, handles):
     asyncio.run(check())
 
 
+def test_omitted_size_limit_omits_miss_headers(handles):
+    import httpx
+
+    async def check():
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=main.app), base_url="http://test"
+        ) as client:
+            response = await client.post(
+                "/api/v1/images/process",
+                files={"file": ("input.png", valid_image(), "image/png")},
+                data={"output_format": "jpeg", "max_width": "6"},
+            )
+        assert response.status_code == 200
+        assert "x-result-bytes" not in response.headers
+        assert "x-size-limit-met" not in response.headers
+
+    asyncio.run(check())
+
+
+def test_met_size_limit_sends_true_headers(handles):
+    import httpx
+
+    async def check():
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=main.app), base_url="http://test"
+        ) as client:
+            response = await client.post(
+                "/api/v1/images/process",
+                files={"file": ("input.png", valid_image(), "image/png")},
+                data={"size_limit": "0.5", "size_unit": "mb"},
+            )
+        assert response.status_code == 200
+        assert response.headers["x-size-limit-met"] == "true"
+        assert int(response.headers["x-result-bytes"]) == len(response.content)
+        assert len(response.content) <= 524_288
+
+    asyncio.run(check())
+
+
+def test_unattainable_size_limit_is_200_miss(handles):
+    import httpx
+
+    async def check():
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=main.app), base_url="http://test"
+        ) as client:
+            response = await client.post(
+                "/api/v1/images/process",
+                files={"file": ("input.png", valid_image(), "image/png")},
+                data={"size_limit": "0.001", "size_unit": "kb", "output_format": "jpeg"},
+            )
+        assert response.status_code == 200
+        assert response.headers["content-disposition"] == (
+            'attachment; filename="result.jpg"'
+        )
+        assert response.headers["x-size-limit-met"] == "false"
+        assert int(response.headers["x-result-bytes"]) == len(response.content)
+        assert len(response.content) > 1
+
+    asyncio.run(check())
+
+
 def test_size_limit_only_jpeg_is_enough_to_process(handles):
     import io
 
