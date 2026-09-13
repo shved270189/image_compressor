@@ -1,22 +1,32 @@
 # Image compressor
 
-Resize and convert one static JPEG, PNG, WebP or HEIC image to JPEG, PNG or WebP.
-FastAPI serves the processing endpoint and built React frontend.
+Resize, convert and optionally compress one static JPEG, PNG, WebP or HEIC
+image to JPEG, PNG or WebP. FastAPI serves `POST /api/v1/images/process` and
+the built React frontend.
 
 ## Image workflow
 
 1. Select a non-empty image up to 20,000,000 bytes. Preview stays local and is
-   optional when the browser cannot display the format.
-2. Optionally set maximum width and height, an optional Size limit in Mb or Kb
-   (empty means no result byte bound), and choose an output format (JPEG by
-   default). Empty dimensions impose no bound; images never enlarge or crop.
-   A supplied Size limit may shrink below those maxima to meet the budget. Size
-   limit is not the 20,000,000-byte upload cap.
-3. Process the image. Controls stay locked until the complete response arrives.
-   When the bound is omitted or met, one result downloads automatically and the
-   form clears. When the bound cannot be met, the smallest file still downloads,
-   the form stays, and the actual size is shown so you can change settings and
-   retry.
+   optional when the browser cannot display the format. Choosing another file
+   resets dimensions, Size limit, format, errors and miss facts.
+2. Optionally set maximum width and height, an optional Size limit, and an
+   output format (JPEG by default). Size limit is a positive decimal with a
+   native Mb/Kb select to the right of the number (Mb initially; empty means
+   no result byte bound). Width, height and Size limit are independent; any
+   supplied constraint is enough to process, including Size limit alone.
+   Empty dimensions impose no bound. Images never enlarge, crop or stretch.
+   A supplied Size limit is the primary constraint: encoding may shrink below
+   those maxima and below the original until the file fits. 1 Mb = 1,000,000
+   bytes; 1 Kb = 1,000 bytes; 0.5 Mb is 500,000 bytes. Size limit is not the
+   20,000,000-byte upload cap.
+3. Process the image. File selection and transformation controls stay locked
+   until the complete response arrives, with a truthful busy state and no
+   fabricated percentages. When Size limit is omitted or met, one result
+   downloads automatically and the form clears. When the bound cannot be met,
+   the smallest chosen-format file still downloads, the form stays, and the
+   page shows the actual size plus that the limit was exceeded so you can
+   change settings and retry. Zero, negative or non-positive Size limit is
+   rejected locally; the selected image is kept.
 
 The server also enforces 40,000,000 decoded pixels, including equality. Dimensions
 must be positive whole pixel counts. Output sides above WebP's 16,383 or JPEG's
@@ -30,15 +40,21 @@ images and converts HDR to ordinary 8-bit output. Animated inputs are rejected.
 Results are not guaranteed smaller or byte-identical, including same-format conversion.
 
 Errors retain the current selection and settings for an explicit retry. Successful
-download handoff or page closure releases browser resources. The server retains
-no original or result for later retrieval; upload spools and image buffers are
-operation-scoped. Native work already running may finish before cleanup.
+download handoff or page closure releases browser resources. Closing or reloading
+restores neither input nor result. The server retains no original or result for
+later retrieval; upload spools and image buffers are operation-scoped. Native work
+already running may finish before cleanup.
 
 The contract is [OpenAPI](docs/features/image-size-limit/contracts/openapi.yaml).
-Multipart transport also limits the body to 20,065,536 bytes, cumulative part
-header names/values to 16,384 bytes and each text field to 1,024 bytes.
+Optional fields are `max_width`, `max_height`, `size_limit`, `size_unit` (`mb` or
+`kb`) and `output_format`. A supplied Size limit adds `X-Result-Bytes` and
+`X-Size-Limit-Met` on the 200 response. Multipart transport also limits the body
+to 20,065,536 bytes, cumulative part header names/values to 16,384 bytes and each
+text field to 1,024 bytes.
 
 Implementation checks are recorded in the [task tracker](docs/features/image-size-limit/tasks/tracker.md).
+Size limit, miss keep-form and 360/1280 checks are in
+[image-size-limit browser acceptance](docs/features/image-size-limit/_audit/browser-acceptance.md).
 The owner confirmed download/reset in iOS and desktop Safari/Firefox and accepted
 phone/desktop readability. Independent Security Lead technical review passed.
 Firefox/WebKit engine checks and native Safari server-error retry passed. The
