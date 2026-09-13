@@ -4,301 +4,245 @@ owner: "Tech Lead"
 reviewers: ["Tech Lead", "Security Lead"]
 updated_at: "2026-09-13"
 feature_size: S
-target_surfaces: []  # filled in §4 — subset of: backend-service | web-frontend | mobile-app | desktop-app | cli | worker | library-sdk. Read (never re-derived) by api/sequences/tasks/plan-tests/review → _shared/surfaces.md
+target_surfaces: [cli]
 ---
 
 # Software Architecture Document — kamal-deploy
 
-<!-- 12 Arc42 sections. Empty section → <!-- N/A: <one-line reason> -->. -->
-<!-- C4 Context (L1) lives inline in §3. C4 Container (L2) lives inline in §5. -->
-<!-- Numbers in §10 come VERBATIM from spec.md §6 NFR — no inventing, no rounding. -->
+The owner approved depth easy, size S and route quick. Documents remain English, matching this feature folder. Canonical domain terms are in [CONTEXT.md](./CONTEXT.md). This document records architecture only; it does not run a live publish.
 
 ## 1. Introduction and goals
 
-<!-- 🎯 Why: durable memory of «what + the three dominant qualities + who cares». A year from
-     now nobody recalls which three qualities were critical for this system.
-     📋 Write: 1 ¶ intent + 3 lines of top-3 quality goals + a stakeholders table.
-     ¶4 is the override slot — critic `Override` resolutions emit «Decision override: <headline>
-     — rationale: <reason>» bullets here so downstream skills see the deliberate choice. -->
-
-**Intent.** <One paragraph from spec §2 Goals — what we're building and for whom.>
+**Intent.** Give the Project owner a complete committed Deploy configuration — the Kamal publish recipe with the known non-secret host facts — and a local Configuration check that proves that recipe is readable and complete without contacting the production host or the container registry. Secret values stay in the local Secrets file. Live publish, host provisioning, DNS and certificates stay later. The Image owner's compression form does not change.
 
 **Top-3 quality goals (1-liners; full scenarios in §10):**
 
-1. <e.g. "Availability under partial failure of a downstream module">
-2. <e.g. "Read performance for the dashboard under data-scale growth">
-3. <e.g. "Recoverability with <30 min RTO">
+1. Secret leakage: 0 secret values in committed files; environment-variable names are allowed.
+2. Host and registry contact during check: 0 connections to the production host and 0 connections to the container registry.
+3. Configuration check runtime ≤ 30 s on the Project owner's machine, and recipe completeness 100% of required non-secret fields and the required registry password present or the check is not successful.
 
 **Stakeholders.**
 
 | Role | Interest | Sign-off owner? |
 |---|---|---|
-| <author role from glossary> | <feature usage> | No |
-| <consumer role from glossary> | <read usage> | No |
+| Project owner | Complete recipe, local secrets, Configuration check, later publish command | Yes |
+| Image owner | Unchanged selection, limits, download and cleanup; no publish action on the form | No |
 | Tech Lead | SAD approval | Yes |
-
-<!-- Decision overrides (¶4) — populated by the critic resolution loop, empty otherwise. -->
 
 ## 2. Constraints
 
-<!-- 🎯 Why: §4 strategy only works when §2 has fixed WHAT IS ALREADY FIXED — stack, versions,
-     deadline, regulatory. This is an input, not an output.
-     📋 Write: four blocks — Technical / Organisational / Conventions / Regulatory.
-     📌 Pin versions («<datastore> 18», not «<datastore>»); «Q3 deadline — hard», not «ideally».
-     Never N/A — every feature inherits at least Conventions + Technical. -->
-
 **Technical.**
-- <Language + version>
-- <Framework(s) + version>
-- <Datastore(s) + version>
-- <Architecture convention — e.g. the layering style from the project convention file>
+- Application runtime remains Python 3.14.6, FastAPI and Uvicorn on port 8000, health at `GET /api/health`. The existing multi-stage Dockerfile already produces one non-root application image (UID 10001).
+- Deployment tooling is Kamal 2.12.0 via `bundle exec kamal`, with Ruby 4.0.5 pinned by mise. Do not add `gem:kamal` to `mise.toml`.
+- No datastore, queue, accessory or second environment. Foundation [ADR 0002](../../adr/0002-single-service-and-kamal.md) already fixes `proxy.app_port: 8000` and `proxy.healthcheck.path: /api/health`.
+- Interview facts, committed as non-secret recipe values: host `138.201.118.229`, Public site names `image.bondev.eu` and `www.image.bondev.eu`, image `shved270189/image_compressor`, registry username `shved270189`, HTTPS on, service name exactly `image_compressor`, image architecture amd64.
 
 **Organisational.**
-- <Effort budget — e.g. 3 person-weeks>
-- <Deadline — e.g. 2026-Q3 hard>
-- <Team composition>
+- Size S, route quick. No launch deadline for going live. This step is configuration-only; the Project owner runs the later publish.
+- No new CI job. The existing pytest suite may cover the Configuration check with a throwaway secrets fixture that is not production secrets.
+- The Project owner holds secrets locally and will run `bundle exec kamal deploy` later.
 
 **Conventions.**
-- <Link to the project's convention file>
-- <Naming, ID strategy, error-handling pattern>
+- Follow [AGENTS.md](../../../AGENTS.md), the [architecture map](../../architecture-map.md) and foundation [ADR 0001](../../adr/0001-stack-and-development-tools.md) / [ADR 0002](../../adr/0002-single-service-and-kamal.md).
+- HTTP validation stays in `backend/main.py`; this feature does not add image functions or frontend behaviour.
+- Run Kamal only as `bundle exec kamal`. Use root mise tasks and the existing uv, npm and Bundler lockfiles.
 
 **Regulatory / external.**
-- <e.g. data-retention / deletion behaviour per ADR-NNNN>
-- <e.g. applicable compliance controls, or N/A with a reason>
+- Spec §6.1: no new personal data, no new application account boundary, security review N/A.
+- Host address, Public site names, image name, service name and image architecture are internal and become public in git (accepted residual). Registry password and SSH private key are confidential.
+- Pre-launch targeting of the committed host address before live hardening is an accepted residual; this step does not harden the host.
 
 ## 3. Context and scope
 
-<!-- 🎯 Why: draws the SYSTEM BOUNDARY — who talks to it from outside, where the trust zone ends.
-     Without §3, §5 and §8 (authorization) blur — unclear what's «inside» vs «outside».
-     📋 Write: 2–3 sentences of business context + an external-systems table + a C4Context block.
-     📌 «External: none (deliberate, no third-party in v1)» is itself a decision worth stating.
-     Trust boundary — the line past which you don't trust data without checking it.
-     Never N/A — greenfield still draws the planned actors + external systems. -->
+The Project owner already has a working local form and an application image. This increment records the publish recipe in the repository and proves it locally. The Image owner continues to process one image per operation on that form. The production host and the container registry exist as later destinations; this step must not contact them.
 
-<Business context in 2–3 sentences. What the system does for whom.>
-
-<!-- brownfield: <one-line scan summary> (or «N/A — greenfield repo» if no source existed) -->
+<!-- brownfield: architecture-map.md reflects_commit 3236057, HEAD f817bdb is that survey; config/deploy.yml and .kamal/ absent; Kamal 2.12.0 locked; application image listens on 8000 with /api/health -->
 
 **External systems (in / out):**
 
 | Actor or system | Type | Interaction |
 |---|---|---|
-| <author role> | Person | <what they do> |
-| <external service> | System (internal/external) | <interaction> |
-| <identity provider> | System (external) | <provides auth tokens> |
+| Project owner | Person | Records Deploy configuration, holds the Secrets file, runs the Configuration check |
+| Image owner | Person | Uses the existing compression form; no publish or check action |
+| Image compressor | System (this product) | Existing application image plus the new local recipe and check |
+| Production host | System (external) | Owner-supplied server `138.201.118.229` — not contacted this step |
+| Container registry | System (external) | Holds `shved270189/image_compressor` — not contacted this step |
 
-**C4 Context (L1):** <!-- syntax → references/c4-mermaid-syntax.md. Real names, no <placeholder> stubs. -->
+**Trust boundary.** Secret values never leave the Project owner's machine into git. Committed recipe fields are public. The Configuration check reads local files only; it does not authenticate to the host or the registry. The compression form is not a control plane for publish.
+
+**C4 Context (L1):**
 
 ```mermaid
 C4Context
-    title <feature> — System Context
-
-    Person(actor, "<Actor role>", "<intent>")
-    System(app, "<Our system>", "<one-sentence description>")
-    System_Ext(ext, "<External system>", "<one-sentence description>")
-
-    Rel(actor, app, "<interaction>", "<protocol>")
-    Rel(app, ext, "<interaction>", "<protocol>")
+    title kamal-deploy - System Context
+    Person(project_owner, "Project owner", "Prepares Deploy configuration and runs the Configuration check")
+    Person(image_owner, "Image owner", "Processes one image in the existing form")
+    System(compressor, "Image compressor", "Single-image tool plus a local publish recipe")
+    System_Ext(host, "Production host", "Owner-supplied server - not contacted this step")
+    System_Ext(registry, "Container registry", "Holds the application image - not contacted this step")
+    Rel(project_owner, compressor, "Records the recipe and runs the Configuration check", "local files and pytest")
+    Rel(image_owner, compressor, "Uses the compression form", "HTTP locally")
 ```
+
+Context in prose: Project owner and Image owner both talk to Image compressor. The host and registry are drawn so the trust zone is visible, with no relationship this step.
 
 ## 4. Solution strategy
 
-<!-- 🎯 Why: the 3–4 STRATEGIC PILLARS every ADR grows from. Without §4 each ADR looks random —
-     there's no umbrella. ⭐ The densest section — the blast-radius gate fires almost always here
-     (decisions are irreversible + multi-module).
-     📋 Write: 3–4 choices; each a heading + 2–3 sentences of rationale.
-     📌 «Store content as a table of typed blocks» is a pillar — ADR-0001 grows from it. -->
-
 **Top strategic choices (the seeds for ADRs):**
 
-1. **<e.g. Module isolation through events>** — <2–3 sentences citing quality goals + constraints>.
-2. **<e.g. Single-store persistence>** — <2–3 sentences>.
-3. **<e.g. Server-rendered read side>** — <2–3 sentences>.
+1. **Declare a CLI surface for the Configuration check.** `target_surfaces: [cli]`. The Project owner runs a local command. The Image owner form and the FastAPI application are unchanged, so this feature does not add `web-frontend` or `backend-service`. Downstream stages read that declaration: the contract is a command with exit codes, not OpenAPI, and there is no UI task layer. [ADR 0001](./adr/0001-declare-cli-surface-for-configuration-check.md) records the surface.
 
-Each tactical decision in later sections should trace to one of these seeds. Tactical decisions that *contradict* a strategic choice are red flags — surface them in §11.
+2. **Commit real non-secret host facts in `config/deploy.yml`; keep secret values only in the gitignored Secrets file.** The recipe may contain environment-variable names, including the registry-password name. Values live in `.kamal/secrets`. SSH private key is not required in that file. No second destination file, accessory or extra service.
+
+3. **Prove the recipe with an offline pytest Configuration check.** The check is a test in the existing suite. It reads Deploy configuration and a throwaway Secrets file fixture, names missing required fields in glossary terms, and does not invoke Kamal commands that can open sockets to the host or the registry. The Project owner runs it with `uv run pytest`. No new CI job and no extra mise task. [ADR 0002](./adr/0002-prove-recipe-with-offline-pytest-check.md) records this over Kamal-native config dump and a separate mise wrapper.
+
+4. **Reuse the existing one-application-service production target.** The recipe points kamal-proxy at port 8000 and health path `/api/health`, sets service name `image_compressor`, enables HTTPS for both Public site names, and builds amd64. This inherits foundation ADR 0002; it does not add a second container or change processing limits.
+
+Each tactical decision in later sections should trace to one of these seeds. Tactical decisions that contradict a strategic choice are red flags — surface them in §11.
 
 ## 5. Building block view
 
-<!-- 🎯 Why: INTERNAL DECOMPOSITION — modules, containers, datastores. The static topology: who
-     may talk to whom. Without §5, §6 (the flows) has no vocabulary of participants.
-     📋 Write: 1 ¶ on the style (layered / hexagonal / clean / event-driven) + a folder tree + a
-     C4Container block.
-     📌 Draw ONE Container per declared `target_surface` (frontmatter): a fullstack
-     [backend-service, web-frontend] = a backend-API container + a web/SPA container; a
-     [backend-service, mobile-app] = the API + the mobile app. The Container(web, …) line below is
-     just one surface's container — swap/add per what was declared in §4. → _shared/surfaces.md
-     📌 e.g. «web app, content API, media worker, datastore, object store, CDN». -->
-
-<One paragraph: layered / hexagonal / clean / event-driven, and why.>
+This feature adds repository-root configuration and a verification test. It does not introduce a new application module, datastore or HTTP handler. The layering is file-plus-check: Kamal 2 reads `config/deploy.yml` at later publish time; this step only writes that file and proves it offline.
 
 **Internal decomposition:**
 
 ```
-<e.g. modules/<feature>/>
-├── domain/       <entities + sentinel errors>
-├── app/          <use cases / services>
-├── infra/        <repository + integration impl>
-├── ports/        <handlers, DTOs, error mapping>
-└── wiring        <self-wiring entry point>
+repository root
+├── config/deploy.yml              Deploy configuration (Kamal 2 recipe, committed)
+├── .kamal/secrets                 Secrets file (gitignored; throwaway fixture in tests)
+├── tests/test_kamal_deploy.py     Configuration check (offline pytest)
+├── .gitignore                     Ignore the Secrets file
+└── README.md                      Later publish command: bundle exec kamal deploy
 ```
 
-**C4 Container (L2):** <!-- syntax → references/c4-mermaid-syntax.md. Real names, no <placeholder> stubs. ONE Container per declared target_surface (frontmatter); the web container below is one example surface. -->
+The existing `backend/` and `frontend/` trees are out of scope. `.gitignore` does not yet ignore `.kamal/secrets`; implementation must add that ignore.
+
+**C4 Container (L2):**
 
 ```mermaid
 C4Container
-    title <feature> — Containers
-
-    Person(actor, "<Actor>")
-
-    Container_Boundary(app, "<Our system>") {
-        Container(web, "<Web/UI>", "<technology>", "<purpose>")
-        Container(api, "<API/handler>", "<technology>", "<purpose>")
-        ContainerDb(db, "<Datastore>", "<technology>", "<purpose>")
+    title kamal-deploy - Containers
+    Person(project_owner, "Project owner")
+    Person(image_owner, "Image owner")
+    Container_Boundary(repo, "Image compressor repository") {
+        Container(check, "Configuration check", "pytest", "Reads Deploy configuration and the Secrets file offline")
     }
-
-    System_Ext(ext, "<External>", "<purpose>")
-
-    Rel(actor, web, "<interaction>", "<protocol>")
-    Rel(web, api, "<calls>")
-    Rel(api, db, "<reads/writes>", "<driver>")
-    Rel(api, ext, "<emits>", "<protocol>")
+    System_Ext(app, "Application image", "Existing FastAPI and built frontend on port 8000")
+    System_Ext(proxy, "kamal-proxy", "Future reverse proxy - not started this step")
+    System_Ext(host, "Production host", "Not contacted this step")
+    System_Ext(registry, "Container registry", "Not contacted this step")
+    Rel(project_owner, check, "Runs the Configuration check", "uv run pytest")
+    Rel(image_owner, app, "Uses the compression form", "HTTP locally")
 ```
+
+Containers in prose: the only container this feature owns is the Configuration check (the `cli` surface). Deploy configuration and the Secrets file are its inputs, not extra C4 containers. The Application image and kamal-proxy already exist as the later production topology; this step does not start them or talk to the host or registry.
 
 ## 6. Runtime view
 
-<!-- 🎯 Why: the RUNTIME FLOW of 1–2 critical scenarios — who talks to whom, when, in what order.
-     Without §6, §5 is just boxes with no life.
-     📋 Write: a Mermaid sequenceDiagram. Participants are names from §5 (don't invent new ones).
-     Messages are semantic («saves a draft»), NO HTTP verbs / paths / status codes — endpoint-level
-     sequences arrive at the `api` stage.
-     📌 e.g. «author → web: composes draft → web → content API: save». Seed the primary flow(s) here;
-     the `sequences` stage then covers every §5 AC (no cap). Never N/A for M+; XS/S keeps ≥1 happy-path flow. -->
-
-**Critical flow 1: <flow name>**
+**Critical flow 1: Configuration check**
 
 ```mermaid
 sequenceDiagram
-    actor Actor
-    participant Web
-    participant Service
-    participant Store
-    Actor->>Web: <action>
-    Web->>Service: <call>
-    Service->>Store: <write>
-    Store-->>Service: ok
-    Service-->>Web: result
-    Web-->>Actor: confirmation
+    actor ProjectOwner as Project owner
+    participant Check as Configuration check
+    participant Recipe as Deploy configuration
+    participant Secrets as Secrets file
+    ProjectOwner->>Check: run Configuration check
+    Check->>Recipe: read required non-secret fields
+    Check->>Secrets: read required registry password
+    alt recipe complete and registry password present
+        Check-->>ProjectOwner: success
+    else required field or secret missing
+        Check-->>ProjectOwner: failure naming each gap in glossary terms
+    end
 ```
 
-**Critical flow 2: <e.g. async event propagation>** — <if applicable, otherwise N/A>.
+The happy path covers AC-03. The missing-field branch covers AC-04. Recording the recipe (AC-01), secret absence from git (AC-02), the README later command (AC-05), and unchanged form/processing (AC-06, AC-07, AC-08) are file and product invariants, not extra runtime flows.
+
+**Critical flow 2:** <!-- N/A: size S, one actor-facing command, failure mode inlined as alt -->
 
 ## 7. Deployment view
 
-<!-- 🎯 Why: the TOPOLOGY DevOps must know without reading the deploy charts — how many replicas,
-     where the background worker lives, AT WHAT NUMBERS we scale.
-     📋 Write: 2–3 sentences on topology + monitoring + concrete threshold numbers.
-     📌 e.g. «500 authors → partition by quarter» (not «we'll think about scale later»).
-     🎯 N/A allowed for XS/S that reuses an existing deployment unit with no change.
-     Deployment-diagram scaffold → templates/deployment.md. -->
-
-<Topology in 2–3 sentences. Where it runs, replicas, scaling thresholds.>
+This step does not apply the topology. The recipe describes one production host (`138.201.118.229`) running kamal-proxy on ports 80 and 443, forwarding HTTPS for `image.bondev.eu` and `www.image.bondev.eu` to one application container on port 8000. Service name is `image_compressor`. The image is `shved270189/image_compressor` for amd64. Replicas: one. No accessories.
 
 **Monitoring:**
-- <Metrics — e.g. `<metric_name>`>
-- <Alerts — e.g. «worker lag > 10 min → page on-call»>
-- <Tracing — e.g. spans on the request boundary>
+- This step: Configuration check outcome (success or named gaps). No live uptime metrics.
+- Later publish (out of scope): kamal-proxy health against `/api/health` on port 8000.
 
 **Scaling thresholds:**
-- <e.g. comfortable in one table up to N rows/year>
-- <e.g. partition by quarter above N rows/year>
-
-<!-- For XS/S with no deployment change: <!-- N/A: reuses existing deployment unit, no infra change --> -->
+- Single host, single application container. No partition or replica threshold in this increment.
+- Image architecture is amd64 even when the Project owner's machine is arm64; first live publish may need a cross-architecture builder. That is a later-publish risk, not a check failure.
 
 ## 8. Crosscutting concepts
 
-<!-- 🎯 Why: CROSS-CUTTING PATTERNS spanning several modules: logging, errors, authorization, ID
-     strategy, events, caching. ⭐ The second-densest section. A pattern inside one module is NOT
-     here; a project-wide convention belongs in the convention file.
-     📋 Write: a table — concept / convention / where defined. One row per concept.
-     📌 e.g. «sortable time-based IDs generated in the app layer» as a default from the convention file. -->
-
 | Concept | Convention | Where defined |
 |---|---|---|
-| Logging | <e.g. structured, fields `module=<name>`> | <convention file §X or here> |
-| Authentication | <e.g. token-based via middleware> | <convention file §X> |
-| Error handling | <e.g. domain sentinel → ports error mapping → JSON> | <convention file §X> |
-| ID strategy | <e.g. sortable time-based ID in the app layer> | <convention file §X> |
-| Internationalisation | <e.g. N/A, single language> | — |
-| Observability | <e.g. tracing on the request boundary> | — |
-| Events | <module-specific patterns, if any> | <here> |
+| Logging | No new application logs. Configuration check reports success or named gaps on stdout via pytest | This section |
+| Authentication | No new application accounts. Only a Project owner with the Secrets file can run the check and the later publish | spec.md §6.1 |
+| Authorization | The compression form exposes no publish or Configuration check action | spec.md AC-06 |
+| Error handling | Missing required recipe field or secret fails the check and names each gap in glossary terms | spec.md AC-04 |
+| Secrets | Secret values only in `.kamal/secrets`, which git ignores; recipe may contain environment-variable names | spec.md AC-02, this section |
+| ID strategy | N/A — no entities or persistent records | — |
+| Internationalisation | N/A, single language | — |
+| Observability | No new traces or metrics. Check runtime is wall clock of the documented check command | spec.md §6 |
+| Events | N/A — no async work | — |
+| Persistence | Unchanged: request-scoped uploads, no image store | foundation ADR 0003 |
 
 ## 9. Architecture decisions
 
-<!-- 🎯 Why: the REVERSE INDEX onto the adr/ folder. `ls adr/` gives the files; §9 gives the
-     semantics — why they exist, which SAD section they attach to, what status.
-     📋 Write: a 4-column table, one row per ADR. Mixed status is fine.
-     📌 e.g. «0001 | Store content as a table of typed blocks | Accepted | §4». -->
-
 | # | Title | Status | Section |
 |---|---|---|---|
-| <NNNN> | <imperative — e.g. "Use a sliding-window counter for rate limiting"> | Accepted | §<N> |
-| <NNNN> | <imperative — e.g. "Co-locate the worker in the API process"> | Accepted | §<N> |
+| 0001 | Declare a CLI surface for the Configuration check | Accepted | §4 |
+| 0002 | Prove the recipe with an offline pytest Configuration check | Accepted | §4 |
 
-ADR files live under `docs/features/<slug>/adr/NNNN-<title>.md`.
+ADR files live under `docs/features/kamal-deploy/adr/`. Foundation [ADR 0001](../../adr/0001-stack-and-development-tools.md) and [ADR 0002](../../adr/0002-single-service-and-kamal.md) remain authoritative for the Kamal gem, one application service, port 8000 and `/api/health`.
 
 ## 10. Quality requirements
 
-<!-- 🎯 Why: the QUALITY TREE — take a goal from §1 and break it into concrete leaves: tests,
-     metrics, configs, drills. ⭐ Without §10, §1 is a manifesto. With §10 each declaration maps
-     to something PROVABLE.
-     📋 Write: per §1 goal — When / Then / How-verify. Numbers from spec §6 NFR — no inventing, no rounding.
-     📌 e.g. «p95 ≤ 500 ms on a block update, verified by a 100 req/s load test». -->
+Each top-3 goal from §1 expanded into a full scenario. Numbers are from spec.md §6 NFR verbatim.
 
-Each top-3 goal from §1 expanded into a full scenario:
+**QG-1. Secret leakage**
+- **When:** anyone inspects the committed repository after Deploy configuration is recorded
+- **Then:** 0 secret values in committed files; environment-variable names are allowed; registry password and SSH private key material are absent; secret values exist only in the Project owner's Secrets file, which git ignores
+- **How verify:** integration test that the Secrets file is gitignored, that committed tree contains no password values or private-key material, and that a throwaway secrets fixture used by the Configuration check is not production secrets (spec §7 KPI: Secret leakage target 0)
 
-**QG-1. <quality attribute>**
-- **When:** <trigger condition>
-- **Then:** <expected behaviour with numbers from spec §6 NFR>
-- **How verify:** <test / chaos drill / load test / metric>
+**QG-2. Host and registry isolation during check**
+- **When:** the Project owner runs the Configuration check with a complete recipe and the required registry password present
+- **Then:** 0 connections to the production host and 0 connections to the container registry; the check reports success
+- **How verify:** integration test of the Configuration check that does not open a session or TCP to `138.201.118.229` or the registry (pytest reads local files only; it does not invoke Kamal network commands)
 
-**QG-2. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+**QG-3. Check runtime and recipe completeness**
+- **When:** the Project owner runs the Configuration check on their machine
+- **Then:** wall clock of the documented check command is ≤ 30 s; the check is successful only when 100% of required non-secret fields and the required registry password are present; otherwise it fails and names each missing required field or secret in glossary terms
+- **How verify:** existing pytest suite duration (KPI: 1 passing run with throwaway secrets fixture, 1 failing run when the Secrets file is absent); AC-04 names gaps rather than reporting success
 
-**QG-3. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+Application form latency, throughput and public uptime remain N/A: this step does not publish the site.
 
 ## 11. Risks and technical debt
 
-<!-- 🎯 Why: ⭐ collects EVERYTHING that can break — not only the technical. Without §11 risks get
-     discussed at standups and lost; debt lives only in the head of whoever accepted it.
-     📋 Write: a risk/debt table — severity — mitigation — owner. Accepted debt in its own block.
-     📌 The first risk is often a product risk, not a technical one. That's normal. -->
-
-<!-- Severity literals: Low / Medium / High for regular risks; "Open question" for rows created by
-     a Save-as-OQ resolution during the Socratic walk (see references/socratic.md). -->
-
 | Risk / debt | Severity | Mitigation | Owner |
 |---|---|---|---|
-| <e.g. Worker lag may reach hours during a downstream outage> | Medium | <alert >10 min, on-call playbook, retry backoff> | <DevOps> |
-| <e.g. No event-schema versioning in v1> | Medium | <ADR-NNNN planned for v2, tolerate unknown fields> | <Backend> |
-| Open architectural decision: <decision-headline> | Open question | Resolve before <stage trigger or YYYY-MM-DD>; <inline rationale from the Save-as-OQ> | <owner> |
+| Which SSH user will the later publish use on `138.201.118.229`? Default now: not required for the Configuration check | Open question | Resolve before first live publish; the check does not require an SSH user | Project owner |
+| Do both Public site names already point at that host, and will certificates be issued only at publish time? Default now: not verified in this step | Open question | Resolve before first live publish; DNS and certificates are non-goals here | Project owner |
+| A green Configuration check treated as proof that DNS, certificates or image pull will work | Medium | Check must not claim live readiness; spec accepts that first live publish may still fail | Project owner |
+| Committed host address can be targeted before live hardening | Low | Accepted residual; this step does not harden the host | Project owner |
+| Secrets present on the machine that wrote the recipe but absent on the machine that later publishes | Medium | Later command fails loudly; this step does not copy secrets. SSH private key is not required in the Secrets file | Project owner |
+| Recipe builds amd64 while a local Docker check previously ran on arm64 | Medium | Record `builder.arch: amd64` in Deploy configuration; first live publish may need a cross-architecture builder | Project owner |
+| `.gitignore` does not yet ignore `.kamal/secrets` | Low | Implementation adds the ignore before any real Secrets file is created | Tech Lead |
 
 **Accepted debt (acceptable in v1, plan to fix later):**
-- <e.g. the entity is immutable / unversioned — OK for v1, may need audit versioning in v2>
+- No live publish, `kamal setup`, host purchase, DNS, certificates, or CI auto-publish in this increment.
+- Configuration check does not parse the recipe through Kamal itself, so a Kamal-specific YAML quirk can pass the check and fail later deploy.
+- SSH user remains unset until first live publish.
 
 ## 12. Glossary
 
-<!-- 🎯 Why: ⭐ the DOMAIN GLOSSARY that ends arguments a year later («checkpoint — weekly or
-     biweekly? quarter — calendar or fiscal?»).
-     📋 Write: a term / meaning table. Business + technical terms mixed.
-     📌 e.g. «Lesson | a unit inside a course made of blocks (text, video)». -->
-
 | Term | Meaning |
 |---|---|
-| <e.g. domain object A> | <its meaning in this domain> |
-| <e.g. domain object B> | <its meaning> |
-| <e.g. domain invariant name> | <the rule, in plain language> |
+| Configuration check | A local command that proves Deploy configuration is readable and complete without contacting the production host or the container registry. NOT a live publish. |
+| Deploy configuration | The committed publish recipe the Project owner prepares so a later live command can run: host address, Public site names, image name, registry username, service name `image_compressor`, image architecture amd64, listening port, health-check path, and HTTPS. NOT the live running site and NOT secret values. |
+| Image owner | The person processing their selected image in the form. NOT Project owner (the person preparing Deploy configuration). |
+| Project owner | The person who prepares Deploy configuration, holds secrets locally, runs the Configuration check, and will run the live publish later. NOT Image owner. |
+| Public site name | A hostname the Project owner intends visitors to open after a later publish (`image.bondev.eu` and `www.image.bondev.eu`). NOT a local development URL. |
+| Secrets file | The Project owner's local gitignored file `.kamal/secrets` that holds secret values such as the registry password. NOT committed Deploy configuration (which may contain only environment-variable names) and NOT an SSH private key that may stay in the machine's default agent. |
+| Later publish command | Exactly `bundle exec kamal deploy`. This step documents it and does not run it. |
