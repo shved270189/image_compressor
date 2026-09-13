@@ -86,6 +86,8 @@ def test_skeleton():
             assert response.headers["content-disposition"] == (
                 'attachment; filename="result.webp"'
             )
+            assert "x-result-bytes" not in response.headers
+            assert "x-size-limit-met" not in response.headers
             with Image.open(io.BytesIO(response.content)) as result:
                 result.load()
                 assert result.size == (2, 1)
@@ -95,6 +97,24 @@ def test_skeleton():
                     pixel[:3], (30, 60, 90), strict=True
                 ))
 
+            with (
+                Image.new("RGB", (4, 2), (30, 60, 90)) as image,
+                io.BytesIO() as source,
+            ):
+                image.save(source, "PNG")
+                jpeg = await client.post(
+                    "/api/v1/images/process",
+                    files={"file": ("input.png", source.getvalue(), "image/png")},
+                    data={"size_limit": "0.5", "size_unit": "mb"},
+                )
+            assert jpeg.status_code == 200
+            assert jpeg.headers["content-type"] == "image/jpeg"
+            assert jpeg.headers["content-disposition"] == (
+                'attachment; filename="result.jpg"'
+            )
+            with Image.open(io.BytesIO(jpeg.content)) as result:
+                assert result.format == "JPEG"
+
             for path in (
                 "/api", "/api/missing", "/api/missing/nested",
                 "/api/v1/images/result.webp",
@@ -102,5 +122,6 @@ def test_skeleton():
                 for accept in ("application/json", "text/html"):
                     response = await client.get(path, headers={"Accept": accept})
                     assert response.status_code == 404
+                    assert "image/" not in response.headers.get("content-type", "")
 
     asyncio.run(check())
