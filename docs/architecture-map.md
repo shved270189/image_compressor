@@ -108,7 +108,7 @@ Kamal runs through `bundle exec kamal`. A future deployment configuration uses `
 ## Implemented scope and remaining acceptance
 
 - One image and one form; no batch processing, history, presets, cropping or stretching — `docs/idea-brief.md:28`.
-- Width and height are independently optional; preserve aspect ratio with no enlargement. A target output file size is outside `image-resize-convert`. Roadmap step 3 [`image-size-limit`](roadmap.md) (idea, size S) extends the same form and `POST /api/v1/images/process`. Roadmap sketches automatic dimension reduction to meet a byte limit — `docs/roadmap.md:24`. Current AC-05 forbids extra shrink beyond supplied bounds — `docs/features/image-resize-convert/spec.md:90`. Specify must close D2 before that collision is resolved — `docs/roadmap.md:44`.
+- Width and height are independently optional; preserve aspect ratio with no enlargement. Roadmap step 3 [`image-size-limit`](roadmap.md) (size S, materialized) extends the same form and `POST /api/v1/images/process` with an optional Size limit. A supplied bound may shrink below those maxima to meet the byte budget; encoder-limit 422 is unchanged. D2 is closed — `docs/roadmap.md:44` and `docs/features/image-size-limit/spec.md`.
 - Static JPEG/PNG/WebP/HEIC input becomes JPEG/PNG/WebP output. JPEG uses white behind alpha; metadata is stripped after orientation. HEIC primary-image selection and HDR-to-SDR normalization are implemented. Codec output dimensions above WebP 16,383 or JPEG 65,500 return actionable 422, as approved in the feature amendment.
 - Independent Security Lead technical review passed. Hosted CI and public deployment remain unverified; real iPhone Safari network-failure/retry is owner-confirmed. Android is owner-deferred; migrations are N/A.
 
