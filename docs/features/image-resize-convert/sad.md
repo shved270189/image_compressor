@@ -13,7 +13,7 @@ target_surfaces: [web-frontend, backend-service]
 
 ## 1. Introduction and goals
 
-**Intent.** Give Власник картинки a local, single-page workflow to select an Оригінал, optionally inspect its local Preview, apply independently optional Максимальні розміри, choose JPEG, PNG or WebP, and receive one automatic download of the Результат followed by a clean form. The canonical requirements are [spec.md](./spec.md), including its automatic-download amendment, and [ux-flows.md](./ux-flows.md).
+**Intent.** Give Image owner a local, single-page workflow to select an Original, optionally inspect its local Preview, apply independently optional Maximum dimensions, choose JPEG, PNG or WebP, and receive one automatic download of the Result followed by a clean form. The canonical requirements are [spec.md](./spec.md), including its automatic-download amendment, and [ux-flows.md](./ux-flows.md).
 
 **Top-3 quality goals:**
 
@@ -25,7 +25,7 @@ target_surfaces: [web-frontend, backend-service]
 
 | Role | Interest | Sign-off owner? |
 |---|---|---|
-| Власник картинки | Correct downloaded images and an accessible local workflow | Yes, product and manual contrast acceptance |
+| Image owner | Correct downloaded images and an accessible local workflow | Yes, product and manual contrast acceptance |
 | Tech Lead | Architecture, HEIC feasibility and resource ownership | Yes |
 | Security Lead | Untrusted decoding and temporary-resource handling | Yes, before implementation acceptance |
 
@@ -47,13 +47,13 @@ The HEIC plugin and multipart package are planned implementation dependencies, n
 
 ## 3. Context and scope
 
-Власник картинки selects one Оригінал and receives a transformed Результат through the local Image compressor. Preview is prepared in the browser and is optional; selection and parameter edits never upload a file. The server treats uploaded content and parameters as untrusted, independently of browser validation.
+Image owner selects one Original and receives a transformed Result through the local Image compressor. Preview is prepared in the browser and is optional; selection and parameter edits never upload a file. The server treats uploaded content and parameters as untrusted, independently of browser validation.
 
 The [architecture map](../../architecture-map.md) remains the brownfield source: its materialized foundation is commit `1837854`; inspection through `81326d5` found only documentation and convention changes after that scaffold. The implementation still contains a React shell and health/static-serving endpoints, without image processing. No repository re-scan or new architecture-map artifact is needed.
 
 | Actor or system | Type | Interaction |
 |---|---|---|
-| Власник картинки | Person | Selects an Оригінал, requests processing and receives a Результат |
+| Image owner | Person | Selects an Original, requests processing and receives a Result |
 | Native browser facilities | Client platform | Optional local image display, file selection and download handoff |
 | External application services | None | No third-party processing, identity provider or remote storage |
 
@@ -64,7 +64,7 @@ The [architecture map](../../architecture-map.md) remains the brownfield source:
 ```mermaid
 C4Context
     title Image resize and conversion - System Context
-    Person(owner, "Власник картинки", "Prepares an Оригінал and downloads a Результат")
+    Person(owner, "Image owner", "Prepares an Original and downloads a Result")
     System(compressor, "Image compressor", "Local image resizing and format conversion")
     Rel(owner, compressor, "Selects, configures and processes one image", "Local browser interface")
 ```
@@ -102,12 +102,12 @@ Pillow and pillow-heif are libraries inside Application, not containers. Native 
 ```mermaid
 C4Container
     title Image resize and conversion - Containers
-    Person(owner, "Власник картинки", "Uses the local application")
+    Person(owner, "Image owner", "Uses the local application")
     Container_Boundary(compressor, "Image compressor") {
         Container(web, "Browser UI", "React, TypeScript, Tailwind", "Form, local Preview and automatic download")
         Container(app, "Application", "FastAPI, Pillow, pillow-heif", "Validation, image processing and built frontend serving")
     }
-    Rel(owner, web, "Selects an Оригінал and requests a Результат")
+    Rel(owner, web, "Selects an Original and requests a Result")
     Rel(web, app, "Submits one processing operation and receives its result", "Relative API request")
     Rel(app, web, "Serves built frontend assets", "HTTP")
 ```
@@ -120,18 +120,18 @@ The owner confirmed these two containers and their responsibility split. Develop
 
 ```mermaid
 sequenceDiagram
-    actor Owner as Власник картинки
+    actor Owner as "Image owner"
     participant Web as Browser UI
     participant App as Application
-    Owner->>Web: Select Оригінал and set parameters
+    Owner->>Web: Select Original and set parameters
     Web->>Web: Validate local bytes and prepare optional Preview
     Owner->>Web: Submit processing
     Web->>Web: Lock controls and mark current operation
-    Web->>App: Send Оригінал and transformation parameters
+    Web->>App: Send Original and transformation parameters
     App->>App: Validate parameters, content and input limits
     alt Accepted input and successful processing
-        App->>App: Orient, fit bounds and encode Результат
-        App-->>Web: Complete binary Результат
+        App->>App: Orient, fit bounds and encode Result
+        App-->>Web: Complete binary Result
         Web->>Web: Check current operation and initiate one download
         Web-->>Owner: Clean form after browser handoff
         Web->>Web: Release Preview and download resources at their lifecycle ends
@@ -472,7 +472,7 @@ Targets below come from [spec.md §6](./spec.md#6-non-functional-requirements). 
 
 **QG-3. Accessible interaction and recovery.**
 
-- **When:** Власник картинки completes, retries or repeats the flow in the browser.
+- **When:** Image owner completes, retries or repeats the flow in the browser.
 - **Then:** Form concurrency is “At most one submitted processing operation from the current form; file selection and all transformation parameter controls disabled while processing”. Accessibility requires “Every interactive control is keyboard-usable with visible focus; every label, error and action passes the project owner's manual readable-contrast review; with reduced motion, zero decorative animations and zero loss of functionality”. Responsive UI requires “Complete flow at viewport widths 360 and 1280 CSS pixels with no horizontal page overflow”.
 - **How verify:** Exercise the complete keyboard flow, owner contrast acceptance and reduced-motion review at both widths. Verify disabled controls and duplicate-submit suppression, silent unavailable Preview, conditional JPEG warning and general HEIC notice, one complete download per success, a clean form with no result controls, same-file reselection, consecutive conversions, retained input after recoverable failure and ignored stale completions. The current browser matrix is desktop Chrome, Safari and Firefox, plus iPhone Safari. On 2026-09-06 the owner deferred Android Chrome because no Android device is available; Android is excluded from the current gate, without claiming compatibility. The owner additionally reported successful download smoke checks in iOS Chrome and Firefox. Viewport emulation alone does not prove mobile download behavior.
 
@@ -513,8 +513,8 @@ Canonical terms are copied from [CONTEXT.md](./CONTEXT.md).
 
 | Term | Meaning |
 |---|---|
-| Власник картинки | The person processing their selected image. NOT an application account or permission role. |
-| Оригінал | The image file selected for the current operation. NOT a file overwritten by processing. |
-| Результат | The processed file ready to download for the current operation. NOT the original or a persistent server file. |
-| Максимальні розміри | Independently optional upper width and height bounds in pixels. NOT exact dimensions, cropping or stretching. |
+| Image owner | The person processing their selected image. NOT an application account or permission role. |
+| Original | The image file selected for the current operation. NOT a file overwritten by processing. |
+| Result | The processed file ready to download for the current operation. NOT the original or a persistent server file. |
+| Maximum dimensions | Independently optional upper width and height bounds in pixels. NOT exact dimensions, cropping or stretching. |
 | Preview | An optional frontend-only representation of the selected original above the form when the browser can display it. NOT the processed result or a server-generated image. |

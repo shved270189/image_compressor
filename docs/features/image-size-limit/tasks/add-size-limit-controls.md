@@ -23,9 +23,9 @@ file: "docs/features/image-size-limit/tasks/add-size-limit-controls.md"
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** to set an independently optional Ліміт ваги as a positive decimal with a unit choice of Mb or Kb to the left of the number, Mb initially selected, empty meaning no bound
-> **So that** the Результат can target a file-size budget, and a supplied Ліміт ваги counts as a transformation parameter (processing may run with only that bound and the initial JPEG).
+> **As an** Image owner
+> **I want** to set an independently optional Size limit as a positive decimal with a unit choice of Mb or Kb to the left of the number, Mb initially selected, empty meaning no bound
+> **So that** the Result can target a file-size budget, and a supplied Size limit counts as a transformation parameter (processing may run with only that bound and the initial JPEG).
 >
 > — `spec.md §4, US-01, verbatim` · full text: [spec.md](../spec.md)
 
@@ -33,7 +33,7 @@ This task extends the existing parameter fieldset with the Size limit control.
 
 ## Inlined context
 
-> Ліміт ваги extends the current parameter fieldset on SCR-01; there is no second screen. The web surface is the existing React SPA with local state, no client router and native controls.
+> Size limit extends the current parameter fieldset on SCR-01; there is no second screen. The web surface is the existing React SPA with local state, no client router and native controls.
 >
 > — `sad.md §4, Extend the existing process surfaces, abridged` · full text: [sad.md](../sad.md)
 
@@ -41,11 +41,11 @@ This task extends the existing parameter fieldset with the Size limit control.
 >
 > — `screens.md, Source and Native fallback inventory, abridged` · full text: [screens.md](../screens.md)
 
-> **SCR-01 states this task builds:** default (empty bound, unit Mb, JPEG, only file selection enabled); ready (eligible file enables dimensions, Ліміт ваги, format and processing; empty bound means no result byte bound; a supplied positive bound with only the initial JPEG is enough); validation (local zero/negative/non-positive bound: `Ліміт ваги must be a positive number with Mb or Kb or left empty`; keep the Оригінал).
+> **SCR-01 states this task builds:** default (empty bound, unit Mb, JPEG, only file selection enabled); ready (eligible file enables dimensions, Size limit, format and processing; empty bound means no result byte bound; a supplied positive bound with only the initial JPEG is enough); validation (local zero/negative/non-positive bound: `Size limit must be a positive number with Mb or Kb or left empty`; keep the Original).
 >
 > — `screens.md, SCR-01 Image processing, abridged` · full text: [screens.md](../screens.md)
 
-> **Hard rule:** Every interactive control including the Ліміт ваги number and unit is keyboard-usable with visible focus. Complete flow at 360 and 1280 CSS pixels with no horizontal page overflow, including the unit choice beside the number.
+> **Hard rule:** Every interactive control including the Size limit number and unit is keyboard-usable with visible focus. Complete flow at 360 and 1280 CSS pixels with no horizontal page overflow, including the unit choice beside the number.
 >
 > — `spec.md §6, Accessibility and Responsive UI, abridged` · full text: [spec.md](../spec.md)
 
@@ -68,17 +68,17 @@ Internal — no API surface. Submit wiring of `size_limit` / `size_unit` is T5.
 
 ### AC-02 — happy
 
-> **Given** a selected Оригінал,
-> **When** Власник картинки sets Ліміт ваги,
+> **Given** a selected Original,
+> **When** Image owner sets Size limit,
 > **Then** the control is a numeric field that accepts a positive decimal, with a unit choice to the left of the number whose options are Mb and Kb and with Mb selected initially; empty remains allowed and means no bound.
 >
 > — `spec.md §5, AC-02, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-08 — error
 
-> **Given** a filled Ліміт ваги that is zero, negative or not a positive number,
+> **Given** a filled Size limit that is zero, negative or not a positive number,
 > **When** processing is attempted,
-> **Then** the system rejects the attempt, explains that Ліміт ваги must be a positive number with Mb or Kb or left empty, produces no Результат, and keeps the Оригінал.
+> **Then** the system rejects the attempt, explains that Size limit must be a positive number with Mb or Kb or left empty, produces no Result, and keeps the Original.
 >
 > — `spec.md §5, AC-08, verbatim` · full text: [spec.md](../spec.md)
 

@@ -23,9 +23,9 @@ file: "docs/features/image-size-limit/tasks/extend-smoke-for-size-limit.md"
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** to set an independently optional Ліміт ваги as a positive decimal with a unit choice of Mb or Kb to the left of the number, Mb initially selected, empty meaning no bound
-> **So that** the Результат can target a file-size budget, and a supplied Ліміт ваги counts as a transformation parameter (processing may run with only that bound and the initial JPEG).
+> **As an** Image owner
+> **I want** to set an independently optional Size limit as a positive decimal with a unit choice of Mb or Kb to the left of the number, Mb initially selected, empty meaning no bound
+> **So that** the Result can target a file-size budget, and a supplied Size limit counts as a transformation parameter (processing may run with only that bound and the initial JPEG).
 >
 > — `spec.md §4, US-01, verbatim` · full text: [spec.md](../spec.md)
 
@@ -68,24 +68,24 @@ No DB changes.
 
 ### AC-01 — happy
 
-> **Given** a selected Оригінал within the input limits,
-> **When** Власник картинки leaves Ліміт ваги empty and processes,
+> **Given** a selected Original within the input limits,
+> **When** Image owner leaves Size limit empty and processes,
 > **Then** no result byte bound is applied and dimension and format behaviour matches the existing form.
 >
 > — `spec.md §5, AC-01, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-03 — happy
 
-> **Given** a selected Оригінал and no Максимальні розміри,
-> **When** Власник картинки supplies only a Ліміт ваги and leaves output format at the initial JPEG,
+> **Given** a selected Original and no Maximum dimensions,
+> **When** Image owner supplies only a Size limit and leaves output format at the initial JPEG,
 > **Then** processing is allowed because a transformation parameter is supplied.
 >
 > — `spec.md §5, AC-03, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-09 — authorization
 
-> **Given** a Результат belongs to a different operation or is no longer available to the current page,
-> **When** Власник картинки attempts to retrieve it,
+> **Given** a Result belongs to a different operation or is no longer available to the current page,
+> **When** Image owner attempts to retrieve it,
 > **Then** the application provides no history, lookup or retrieval capability for that result and discloses no image from another operation; no account or ownership-verification system is introduced.
 >
 > — `spec.md §5, AC-09, verbatim` · full text: [spec.md](../spec.md)

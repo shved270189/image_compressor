@@ -23,9 +23,9 @@ file: "docs/features/image-size-limit/tasks/extra-shrink-to-meet-bound.md"
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** a supplied Ліміт ваги to outrank Максимальні розміри as a floor
-> **So that** the system may reduce pixels below those maxima and below the Оригінал to meet the budget, while maxima remain a ceiling, without cropping, stretching, enlargement or a silent format change.
+> **As an** Image owner
+> **I want** a supplied Size limit to outrank Maximum dimensions as a floor
+> **So that** the system may reduce pixels below those maxima and below the Original to meet the budget, while maxima remain a ceiling, without cropping, stretching, enlargement or a silent format change.
 >
 > — `spec.md §4, US-02, verbatim` · full text: [spec.md](../spec.md)
 
@@ -33,11 +33,11 @@ This task adds extra-shrink in image functions so a byte bound can undercut the 
 
 ## Inlined context
 
-> The committed approach is one form with an independent Ліміт ваги. When supplied, it is the primary constraint: the result may use fewer pixels than the supplied maxima and the original, without cropping, stretching, enlargement or a silent format change.
+> The committed approach is one form with an independent Size limit. When supplied, it is the primary constraint: the result may use fewer pixels than the supplied maxima and the original, without cropping, stretching, enlargement or a silent format change.
 >
 > — `spec.md §1, committed approach, abridged` · full text: [spec.md](../spec.md)
 
-> Empty Ліміт ваги keeps the current geometry rule in `output_size`: largest proportional fit to supplied maxima, no extra reduction. A supplied bound is the primary constraint: after that ceiling, `backend/images.py` may reduce pixels below maxima and below the Оригінал, without cropping, stretching, enlargement or a silent format change, and stop at the largest proportional size and highest encoding quality that already meets the bound. One pixel and the smallest file of the chosen format that still exceed the bound are a miss, not a rejection without a file. The exact search procedure is task-level provided AC-05 holds.
+> Empty Size limit keeps the current geometry rule in `output_size`: largest proportional fit to supplied maxima, no extra reduction. A supplied bound is the primary constraint: after that ceiling, `backend/images.py` may reduce pixels below maxima and below the Original, without cropping, stretching, enlargement or a silent format change, and stop at the largest proportional size and highest encoding quality that already meets the bound. One pixel and the smallest file of the chosen format that still exceed the bound are a miss, not a rejection without a file. The exact search procedure is task-level provided AC-05 holds.
 >
 > — `sad.md §4, Apply bound-driven extra shrink, abridged` · full text: [sad.md](../sad.md)
 
@@ -72,25 +72,25 @@ Internal — no API surface.
 
 ### AC-04 — domain invariant
 
-> **Given** supplied Максимальні розміри and an empty Ліміт ваги,
-> **When** Власник картинки processes the Оригінал,
-> **Then** the Результат uses the largest proportional scale that fits all supplied bounds without enlarging and with no additional reduction. An oriented original of 2400 by 1200 pixels with only maximum width 1200 yields 1200 by 600.
+> **Given** supplied Maximum dimensions and an empty Size limit,
+> **When** Image owner processes the Original,
+> **Then** the Result uses the largest proportional scale that fits all supplied bounds without enlarging and with no additional reduction. An oriented original of 2400 by 1200 pixels with only maximum width 1200 yields 1200 by 600.
 >
 > — `spec.md §5, AC-04, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-05 — domain invariant
 
-> **Given** a Ліміт ваги and optional Максимальні розміри,
-> **When** Власник картинки processes the Оригінал,
-> **Then** the Результат never exceeds any supplied dimension bound or either original oriented dimension, never enlarges, never crops or stretches, and keeps the chosen output format. Additional reduction happens only while the encoded file is larger than the Ліміт ваги and stops at the largest proportional size and highest encoding quality the chosen format allows that already meets the bound. If even one pixel and the smallest file of that format still exceed the bound, that is a miss under AC-07, not a rejection without a file. Each scaled dimension is rounded to the nearest whole pixel, with exact half-pixel values rounded up and a minimum of one pixel. An oriented original of 2400 by 1200 pixels with maximum width 1200 and a Ліміт ваги smaller than the 1200-by-600 encoding yields a result shorter than 1200 in width, with aspect ratio 2 to 1 subject to that rounding.
+> **Given** a Size limit and optional Maximum dimensions,
+> **When** Image owner processes the Original,
+> **Then** the Result never exceeds any supplied dimension bound or either original oriented dimension, never enlarges, never crops or stretches, and keeps the chosen output format. Additional reduction happens only while the encoded file is larger than the Size limit and stops at the largest proportional size and highest encoding quality the chosen format allows that already meets the bound. If even one pixel and the smallest file of that format still exceed the bound, that is a miss under AC-07, not a rejection without a file. Each scaled dimension is rounded to the nearest whole pixel, with exact half-pixel values rounded up and a minimum of one pixel. An oriented original of 2400 by 1200 pixels with maximum width 1200 and a Size limit smaller than the 1200-by-600 encoding yields a result shorter than 1200 in width, with aspect ratio 2 to 1 subject to that rounding.
 >
 > — `spec.md §5, AC-05, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-12 — domain invariant
 
-> **Given** a supplied Ліміт ваги,
-> **When** the encoded Результат is compared with that bound,
-> **Then** the bound in bytes equals the entered number multiplied by 1,048,576 for Mb or by 1,024 for Kb, comparison uses whole bytes of the encoded Результат, and 0.5 Mb equals 524,288 bytes.
+> **Given** a supplied Size limit,
+> **When** the encoded Result is compared with that bound,
+> **Then** the bound in bytes equals the entered number multiplied by 1,048,576 for Mb or by 1,024 for Kb, comparison uses whole bytes of the encoded Result, and 0.5 Mb equals 524,288 bytes.
 >
 > — `spec.md §5, AC-12, verbatim` · full text: [spec.md](../spec.md)
 

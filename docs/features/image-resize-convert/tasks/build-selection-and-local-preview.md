@@ -24,8 +24,8 @@ file: "docs/features/image-resize-convert/tasks/build-selection-and-local-previe
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** to select an Оригінал and see its Preview above the form when my browser can display it
+> **As an** Image owner
+> **I want** to select an Original and see its Preview above the form when my browser can display it
 > **So that** I can verify the selected picture before processing.
 
 — `spec.md §4, US-01, verbatim` · [Full text](../spec.md)
@@ -100,56 +100,56 @@ Internal — no API surface.
 
 ### AC-01 (US-01) — happy
 
-> **Given** no Оригінал has been selected,
-> **When** Власник картинки opens the form,
+> **Given** no Original has been selected,
+> **When** Image owner opens the form,
 > **Then** the file-selection control remains available, transformation parameter controls are disabled or hidden and processing is disabled; selecting a non-empty file of at most 20,000,000 bytes reveals or enables the transformation controls with JPEG selected and empty dimension limits, and enables processing without waiting for content validation. Selecting an empty file or a file above that byte limit immediately shows an understandable error, omits Preview and keeps processing disabled.
 
 — `spec.md §5, AC-01, verbatim` · [Full text](../spec.md)
 
 ### AC-02 (US-01) — happy
 
-> **Given** a supported Оригінал within the input limits,
-> **When** Власник картинки selects it,
+> **Given** a supported Original within the input limits,
+> **When** Image owner selects it,
 > **Then** a supported Preview appears above the form, preserves the complete image and correct orientation and is prepared entirely on the owner's device without sending the file for preview generation; when the browser cannot display the file, no Preview or broken-image placeholder is shown, and this absence does not block processing, including for HEIC.
 
 — `spec.md §5, AC-02, verbatim` · [Full text](../spec.md)
 
 ### AC-03 (US-01, US-04) — cross-context
 
-> **Given** an Оригінал has been selected,
-> **When** Власник картинки makes a new file selection,
+> **Given** an Original has been selected,
+> **When** Image owner makes a new file selection,
 > **Then** the previous Preview disappears, dimensions reset to empty and format resets to JPEG, including when the newly selected file is empty or above the byte limit; delayed work for an old selection or completed operation must never replace the current Preview, repopulate a reset form or trigger another download. An unavailable or failed Preview is omitted rather than displaying the old picture, a broken-image placeholder or a processing error.
 
 — `spec.md §5, AC-03, verbatim` · [Full text](../spec.md)
 
 ### AC-07 (US-03) — happy
 
-> **Given** a supported static JPEG, PNG, WebP or HEIC Оригінал,
-> **When** Власник картинки chooses JPEG, PNG or WebP and processes it,
-> **Then** a decodable Результат is produced in the chosen format; JPEG is the initial output choice for every input, including JPEG itself, and there is no guarantee of smaller file size or byte-identical output.
+> **Given** a supported static JPEG, PNG, WebP or HEIC Original,
+> **When** Image owner chooses JPEG, PNG or WebP and processes it,
+> **Then** a decodable Result is produced in the chosen format; JPEG is the initial output choice for every input, including JPEG itself, and there is no guarantee of smaller file size or byte-identical output.
 
 — `spec.md §5, AC-07, verbatim` · [Full text](../spec.md)
 
 ### AC-08 (US-03) — domain invariant
 
-> **Given** a selected Оригінал, whether or not its transparency is known or Preview is available,
-> **When** Власник картинки chooses JPEG,
-> **Then** the form always shows a conditional warning before processing: if the image has transparency, it will become white; this also applies when JPEG is selected by default and requires no advance transparency detection. The JPEG Результат uses white behind partial and full transparency; PNG and WebP output retain transparency.
+> **Given** a selected Original, whether or not its transparency is known or Preview is available,
+> **When** Image owner chooses JPEG,
+> **Then** the form always shows a conditional warning before processing: if the image has transparency, it will become white; this also applies when JPEG is selected by default and requires no advance transparency detection. The JPEG Result uses white behind partial and full transparency; PNG and WebP output retain transparency.
 
 — `spec.md §5, AC-08, verbatim` · [Full text](../spec.md)
 
 ### AC-09 (US-01, US-03) — domain invariant
 
-> **Given** an Оригінал with orientation information or service metadata,
-> **When** Власник картинки processes it,
-> **Then** the Результат and any available Preview have the correct visible orientation, and dimension limits apply to that orientation; the Результат omits GPS, camera and textual metadata while retaining information required for correct color interpretation.
+> **Given** an Original with orientation information or service metadata,
+> **When** Image owner processes it,
+> **Then** the Result and any available Preview have the correct visible orientation, and dimension limits apply to that orientation; the Result omits GPS, camera and textual metadata while retaining information required for correct color interpretation.
 
 — `spec.md §5, AC-09, verbatim` · [Full text](../spec.md)
 
 ### AC-10 (US-01, US-03) — happy
 
-> **Given** a HEIC Оригінал with additional images or high-dynamic-range content,
-> **When** Власник картинки processes it,
+> **Given** a HEIC Original with additional images or high-dynamic-range content,
+> **When** Image owner processes it,
 > **Then** only the designated primary static image is used; the form explains the general HEIC rules before submission: extra images are omitted and high-dynamic-range content becomes ordinary 8-bit output, with no promise of retaining the original high-dynamic-range appearance; this notice requires no advance server inspection.
 
 — `spec.md §5, AC-10, verbatim` · [Full text](../spec.md)
@@ -164,9 +164,9 @@ Internal — no API surface.
 
 ### AC-12 (US-05) — error
 
-> **Given** an empty, corrupted, unsupported or animated Оригінал, or an input above 20 million bytes or 40 million decoded pixels,
+> **Given** an empty, corrupted, unsupported or animated Original, or an input above 20 million bytes or 40 million decoded pixels,
 > **When** processing is attempted,
-> **Then** the system rejects it with an understandable reason and produces no successful Результат; exact limits are allowed, support is determined from actual content, and additional HEIC images are subject to the primary-image rule rather than treated as animation. The form checks only whether the selected file is empty or exceeds the byte limit before preparing Preview; the server checks content, animation and decoded pixel count when processing is submitted, and enforces all input limits even when form restrictions are bypassed.
+> **Then** the system rejects it with an understandable reason and produces no successful Result; exact limits are allowed, support is determined from actual content, and additional HEIC images are subject to the primary-image rule rather than treated as animation. The form checks only whether the selected file is empty or exceeds the byte limit before preparing Preview; the server checks content, animation and decoded pixel count when processing is submitted, and enforces all input limits even when form restrictions are bypassed.
 
 — `spec.md §5, AC-12, verbatim` · [Full text](../spec.md)
 

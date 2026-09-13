@@ -24,8 +24,8 @@ Idempotency-Key. Interface kind: HTTP/REST from declared `backend-service`
 (web-frontend consumes this contract; it does not author one).
 
 English schema identifiers follow the shipped contract: `Original`, `Result` and
-`MaximumDimension` map to Оригінал, Результат and Максимальні розміри;
-`SizeLimit` and `SizeUnit` map to Ліміт ваги and its Mb/Kb unit.
+`MaximumDimension` map to Original, Result and Maximum dimensions;
+`SizeLimit` and `SizeUnit` map to Size limit and its Mb/Kb unit.
 
 ## A. Field origins
 
@@ -84,10 +84,10 @@ control, download handoff, form reset/keep and file-selection reset are UI-only.
 
 | SAD section 6 branch | Operation/response or non-HTTP boundary |
 |---|---|
-| Set optional Ліміт ваги — Bound empty | Request: omit or empty `size_limit`; 200 without miss headers; existing geometry |
-| Set optional Ліміт ваги — Bound is a positive number | Request: positive `size_limit` + `size_unit`; counts as a transformation parameter (anyOf) |
-| Set optional Ліміт ваги — Bound is zero, negative, or not a positive number | Continues through US-05 → 422 `invalidSizeLimit` |
-| Set optional Ліміт ваги — User selects another file | UI-only; no extra operation |
+| Set optional Size limit — Bound empty | Request: omit or empty `size_limit`; 200 without miss headers; existing geometry |
+| Set optional Size limit — Bound is a positive number | Request: positive `size_limit` + `size_unit`; counts as a transformation parameter (anyOf) |
+| Set optional Size limit — Bound is zero, negative, or not a positive number | Continues through US-05 → 422 `invalidSizeLimit` |
+| Set optional Size limit — User selects another file | UI-only; no extra operation |
 | Shrink below dimension ceiling — Bound omitted | 200, no extra shrink, no miss headers; 2400×1200 width 1200 → 1200×600 |
 | Shrink below dimension ceiling — Bound supplied and encoded bytes meet it | 200 with `X-Size-Limit-Met: true` and `X-Result-Bytes` |
 | Shrink below dimension ceiling — Bound supplied and even one pixel exceeds it | 200 with `X-Size-Limit-Met: false` and `X-Result-Bytes`; not 4xx |
@@ -101,8 +101,8 @@ control, download handoff, form reset/keep and file-selection reset are UI-only.
 | Retry after a miss — Recoverable failure | 400 / 413 / 415 / 422 / 500 as existing plus invalid bound |
 | Retry after a miss — User changes settings and processes again | New `processImage` submission; no Idempotency-Key |
 | Retry after a miss — User selects a new file / closes or reloads | UI-only |
-| Correct an invalid Ліміт ваги — Bound is zero, negative, or not a positive number | 422; no result |
-| Correct an invalid Ліміт ваги — Bound is empty or a positive number with Mb or Kb | Valid request; continues through US-01 submit |
+| Correct an invalid Size limit — Bound is zero, negative, or not a positive number | 422; no result |
+| Correct an invalid Size limit — Bound is empty or a positive number with Mb or Kb | Valid request; continues through US-01 submit |
 
 Unsupported outer request media type remains 415. Sequence gap: none of the
 §6 `alt` branches show an invalid `size_unit` or a positive `size_limit`

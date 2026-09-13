@@ -1,6 +1,6 @@
 ---
 status: Draft
-owner: "Автор проєкту"
+owner: "Project owner"
 updated_at: "2026-09-05"
 depth: medium
 ---
@@ -9,50 +9,50 @@ depth: medium
 
 ## 1. Raw idea
 
-Це сайт-одна сторінка, де користувач може скомпресити одну картинку, змінити її розмір (висота і ширина), задати ліміт по розміну нового файли (Мб) і змінити її формат на інший за бажанням.
+A one-page site where a user can compress a single image, change its size (height and width), set a limit on the new file size (MB), and optionally convert it to another format.
 
 ## 2. Problem
 
-Потрібно підготувати картинку під вибрані вимоги до ширини, висоти, ваги й формату. Якщо користувач задає ліміт файлу, головний пріоритет — вкластися в нього.
+The image needs to be prepared to the chosen width, height, file-size, and format requirements. If the user sets a file-size limit, meeting that limit is the top priority.
 
 ## 3. Users
 
-Автор проєкту використовує сайт для власних задач. Частоту використання ще не визначено.
+The project owner uses the site for their own work. Usage frequency is not yet defined.
 
 ## 4. Why now
 
-Є власна потреба в такому інструменті. Окремий привід або строк запуску не названо.
+There is a personal need for this tool. No separate occasion or launch deadline was named.
 
 ## 5. Out of scope
 
-- Пакетна обробка: користувач працює з однією картинкою.
-- Обрізання й розтягування: пропорції зберігаються.
-- Історія та повторне завантаження із сервера: результат потрібен лише для поточної обробки.
-- Збережені набори параметрів: обрано одну звичайну форму.
+- Batch processing: the user works with one image.
+- Cropping and stretching: proportions are preserved.
+- History and re-download from the server: the result is needed only for the current operation.
+- Saved parameter presets: a single ordinary form was chosen.
 
 ## 6. Risks
 
-- Найслабше місце: дуже малий ліміт може зробити картинку непридатною. Мінімальну прийнятну якість і розміри ще не визначено.
-- Задані ширина й висота означають максимальні межі. Користувач може помилково очікувати точні розміри.
-- Видалення серверних файлів після передавання потребує окремого правила для перерваного завантаження.
+- Weakest point: a very small limit can make the image unusable. Minimum acceptable quality and dimensions are not yet defined.
+- Specified width and height mean maximum bounds. The user may mistakenly expect exact dimensions.
+- Deleting server files after delivery needs a separate rule for an interrupted download.
 
 ## 7. Recommendation
 
-Одна сторінка з формою: картинка, потрібні параметри, кнопка обробки. Зберігати пропорції без обрізання; дозволити автоматичне зменшення розмірів заради ліміту файлу. Показувати фактичні розміри, вагу й кнопку завантаження результату. Серверна обробка дозволена; оригінал і результат видаляються після передавання.
+One page with a form: the image, the required parameters, and a process button. Keep proportions without cropping; allow automatic dimension reduction to meet a file-size limit. Show actual dimensions, file size, and a download button for the result. Server-side processing is allowed; the original and the result are deleted after delivery.
 
-Ліміт розміру файлу в МБ, максимальна висота й максимальна ширина — незалежні необов’язкові параметри. Користувач може задати будь-яку їх комбінацію або пропустити всі три. Пропущений параметр не задає обмеження; пропорції картинки зберігаються і тоді, коли задано лише ширину або лише висоту.
+File-size limit in MB, maximum height, and maximum width are independent optional parameters. The user may set any combination of them or skip all three. An omitted parameter imposes no constraint; image proportions are preserved even when only width or only height is set.
 
-Розглянуті альтернативи: покрокова форма та форма зі збереженими наборами. Обрано звичайну форму.
+Alternatives considered: a step-by-step form and a form with saved presets. An ordinary form was chosen.
 
-Сторінка й форма мають вражати сучасним виглядом і зручністю. Потрібні виразна композиція, якісна типографіка, цілісна палітра, продумані відступи та чітка головна дія. «Звичайна форма» означає один екран без майстра кроків, а не базовий або невиразний дизайн. Форма залишається головним елементом сторінки.
+The page and form should feel modern and easy to use. They need a clear composition, quality typography, a coherent palette, considered spacing, and a clear primary action. "Ordinary form" means one screen without a step wizard, not a basic or bland design. The form remains the main element of the page.
 
-Анімації — частина досвіду: поява сторінки, реакції кнопок і полів, вибір картинки, стан обробки та поява результату. Рух підкреслює дію й зміну стану. Анімації не затримують введення або завантаження результату, не спричиняють стрибків макета й не показують вигаданий прогрес.
+Animations are part of the experience: page appearance, button and field reactions, image selection, processing state, and result appearance. Motion emphasizes action and state change. Animations must not delay input or result download, must not cause layout jumps, and must not show fabricated progress.
 
-Дизайн має бути однаково зручним на телефоні й комп’ютері. Обов’язкові зрозумілі підписи й помилки, читабельний контраст, керування клавіатурою та видимий focus. За `prefers-reduced-motion` прибрати декоративний рух, зберігши зрозумілі зміни стану. Перед завершенням UI перевірити вигляд, анімації та весь шлях від вибору картинки до результату на обох розмірах екрана.
+The design must be equally usable on phone and computer. Required: understandable labels and errors, readable contrast, keyboard control, and a visible focus. With `prefers-reduced-motion`, remove decorative motion while keeping understandable state changes. Before finishing the UI, check appearance, animations, and the full path from image selection to result at both screen sizes.
 
 ## 8. Open questions
 
-- Автор проєкту: які вхідні й вихідні формати потрібні?
-- Автор проєкту: який найбільший вхідний файл потрібно обробляти?
-- Автор проєкту: які мінімальні якість і розміри прийнятні заради ліміту?
-- Автор проєкту: що робити, коли ліміт недосяжний або завантаження перервано?
+- Project owner: which input and output formats are needed?
+- Project owner: what is the largest input file that must be processed?
+- Project owner: what minimum quality and dimensions are acceptable for the sake of the limit?
+- Project owner: what should happen when the limit is unattainable or the download is interrupted?

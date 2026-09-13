@@ -60,7 +60,7 @@ application screens. There is no history, lookup or retrieve screen (AC-09).
 
 **Layout:** existing two-column page at 1280 CSS pixels (intro + form); one
 column at 360. Product identity and heading precede the optional Preview above
-the form. The form contains file selection, maximum dimensions, Ліміт ваги
+the form. The form contains file selection, maximum dimensions, Size limit
 (unit selector right of the number), output format, notices, feedback and Process
 image. At 360 CSS pixels, dimension fields stack; the unit selector stays to the
 right of the number with no horizontal page overflow. Preview
@@ -68,24 +68,23 @@ preserves the whole image and correct visible orientation.
 
 | State | Trigger / condition and behavior | Components (native fallback inventory) | Source-ref |
 |---|---|---|---|
-| default | Initial entry or reload. No file or Preview; empty dimensions; empty Ліміт ваги; unit Mb; JPEG selected. Only file selection is enabled. No restoration. AC-01, AC-02, AC-09; SAD §6 US-01; ux-flows S1_READY. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Notices | [WF-01](#wf-01--initial-form) |
+| default | Initial entry or reload. No file or Preview; empty dimensions; empty Size limit; unit Mb; JPEG selected. Only file selection is enabled. No restoration. AC-01, AC-02, AC-09; SAD §6 US-01; ux-flows S1_READY. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Notices | [WF-01](#wf-01--initial-form) |
 | empty | Same visible form as default, including after a met-limit or omitted-bound handoff. Parameters remain visible but disabled; processing disabled. AC-06; SAD §6 S3_CLEAN. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Notices | [WF-01](#wf-01--initial-form) |
-| ready | Eligible file selected. Enable dimensions, Ліміт ваги, format and processing immediately. Empty bound means no result byte bound. A supplied positive bound with only the initial JPEG is enough to process. New selections reset dimensions, bound, unit to Mb, JPEG, errors and miss facts. Preview may be visible, pending or unavailable; pending and failed Preview render no placeholder and never block submission. AC-01–AC-03, AC-10; SAD §6 S1_ALLOWED / S1_RESET. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Preview (only when available), Notices | [WF-02](#wf-02--ready-form) |
-| validation | Local file, dimension or Ліміт ваги rejection, or HTTP 413/415/422. Explain the reason using the mapping below. Invalid bound copy: Ліміт ваги must be a positive number with Mb or Kb or left empty. No Результат. Keep the Оригінал so the owner can correct or clear the field. AC-08; SAD §6 US-05; contract 413/415/422 including `invalidSizeLimit`, `missingSizeUnit`, `invalidSizeUnit`. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Preview (current eligible selection only), Notices, Validation text | [WF-03](#wf-03--validation) |
-| loading | Processing submitted. Disable file selection and all transformation controls including Ліміт ваги. Display Processing… without fabricated percentages or Cancel. A new process replaces previous miss facts. AC-11; SAD §6 S4_WAIT. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Preview (if available), Notices, Status text | [WF-04](#wf-04--processing) |
+| ready | Eligible file selected. Enable dimensions, Size limit, format and processing immediately. Empty bound means no result byte bound. A supplied positive bound with only the initial JPEG is enough to process. New selections reset dimensions, bound, unit to Mb, JPEG, errors and miss facts. Preview may be visible, pending or unavailable; pending and failed Preview render no placeholder and never block submission. AC-01–AC-03, AC-10; SAD §6 S1_ALLOWED / S1_RESET. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Preview (only when available), Notices | [WF-02](#wf-02--ready-form) |
+| validation | Local file, dimension or Size limit rejection, or HTTP 413/415/422. Explain the reason using the mapping below. Invalid bound copy: Size limit must be a positive number with Mb or Kb or left empty. No Result. Keep the Original so the owner can correct or clear the field. AC-08; SAD §6 US-05; contract 413/415/422 including `invalidSizeLimit`, `missingSizeUnit`, `invalidSizeUnit`. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Preview (current eligible selection only), Notices, Validation text | [WF-03](#wf-03--validation) |
+| loading | Processing submitted. Disable file selection and all transformation controls including Size limit. Display Processing… without fabricated percentages or Cancel. A new process replaces previous miss facts. AC-11; SAD §6 S4_WAIT. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Preview (if available), Notices, Status text | [WF-04](#wf-04--processing) |
 | error | HTTP 400/500, request failure or incomplete transfer. No download. Show a safe readable explanation, retain current file, parameters, bound, unit and available Preview, restore controls. A retry is a new submission. AC-11; SAD §6 recoverable failure; contract 400/500. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Preview (if available), Notices, Error text | [WF-05](#wf-05--recoverable-error) |
 | success | Complete 200 belongs to the current operation and the bound was omitted or `X-Size-Limit-Met: true`. Initiate one automatic download, then reset to empty after handoff. N/A: separate success layout, result panel and repeat-download action are excluded. AC-06; SAD §6 US-03; contract 200 with omitted headers or `X-Size-Limit-Met: true`. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Notices | [WF-01](#wf-01--initial-form), after handoff |
-| miss | Complete 200 belongs to the current operation and `X-Size-Limit-Met: false`. Initiate one automatic download; do not reset. Keep the Оригінал and parameters. Show Miss notice: `The result is {N} bytes. The size limit was exceeded.` `{N}` is `X-Result-Bytes` in whole bytes. Controls usable for retry. Notice remains until the next process, a new file selection or page close. AC-07, AC-11; SAD §6 US-04; contract 200 miss headers. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Preview (if available), Notices, Miss notice | [WF-06](#wf-06--miss) |
+| miss | Complete 200 belongs to the current operation and `X-Size-Limit-Met: false`. Initiate one automatic download; do not reset. Keep the Original and parameters. Show Miss notice: `The result is {N} bytes. The size limit was exceeded.` `{N}` is `X-Result-Bytes` in whole bytes. Controls usable for retry. Notice remains until the next process, a new file selection or page close. AC-07, AC-11; SAD §6 US-04; contract 200 miss headers. | Shell, File input, Dimension inputs, Size limit inputs, Format select, Process button, Preview (if available), Notices, Miss notice | [WF-06](#wf-06--miss) |
 
 ### Controls, notices and transitions
 
 - **Selection:** every replacement invalidates previous Preview work and resets
-  dimensions, format, Ліміт ваги (empty), unit to Mb, errors and miss facts,
+  dimensions, format, Size limit (empty), unit to Mb, errors and miss facts,
   including invalid replacements. Reject zero bytes and more than 20,000,000
-  bytes before preparing Preview. Exactly 20,000,000 bytes is eligible. Ліміт
-  ваги is not an upload cap. Keep file selection enabled after local rejection;
+  bytes before preparing Preview. Exactly 20,000,000 bytes is eligible. Size limit is not an upload cap. Keep file selection enabled after local rejection;
   parameter controls remain disabled until an eligible selection.
-- **Ліміт ваги:** visible label `Size limit` with optional. Native `select` of
+- **Size limit:** visible label `Size limit` with optional. Native `select` of
   `Mb` and `Kb` sits to the right of the number. `Mb` is selected initially and
   after every reset. Empty remains allowed and means no bound. A positive
   decimal is accepted; zero, negative or otherwise non-positive values are
@@ -96,7 +95,7 @@ preserves the whole image and correct visible orientation.
   current form. JPEG transparency and HEIC guidance stay as they are. Do not
   promise a smaller file when the bound is empty.
 - **Busy and concurrency:** at most one submitted operation. File selection and
-  every transformation control including Ліміт ваги are disabled while
+  every transformation control including Size limit are disabled while
   processing. Ignore stale completions: no download, no form change, no miss
   facts from an old operation.
 - **Completion:** wait for the complete binary result. Use the contract
@@ -124,10 +123,10 @@ level. Never branch on exact message wording.
 |---|---|---|
 | Local zero bytes or file above 20,000,000 bytes | File is empty or exceeds the byte limit; choose another file. No Preview or submission. | validation |
 | Local non-positive or fractional dimension | Enter a positive whole pixel count, or leave the field empty. Preserve input for correction. | validation |
-| Local zero, negative or non-positive Ліміт ваги | Ліміт ваги must be a positive number with Mb or Kb or left empty. Keep the Оригінал. | validation |
-| HTTP 413 | File exceeds 20,000,000 bytes or selected static image exceeds 40,000,000 decoded pixels. Ліміт ваги is not this cap. | validation |
+| Local zero, negative or non-positive Size limit | Size limit must be a positive number with Mb or Kb or left empty. Keep the Original. | validation |
+| HTTP 413 | File exceeds 20,000,000 bytes or selected static image exceeds 40,000,000 decoded pixels. Size limit is not this cap. | validation |
 | HTTP 415 | Unsupported request media type or actual image content. | validation |
-| HTTP 422 | Missing file or all parameters, invalid dimensions/output, empty/corrupted/animated input, invalid `size_limit` or `size_unit`. Explain the returned reason; keep the Оригінал. | validation |
+| HTTP 422 | Missing file or all parameters, invalid dimensions/output, empty/corrupted/animated input, invalid `size_limit` or `size_unit`. Explain the returned reason; keep the Original. | validation |
 | HTTP 400 | Malformed multipart request; show a readable request failure and permit retry. | error |
 | HTTP 500 | Processing failed; show a safe explanation and permit retry. | error |
 | Failed request or incomplete transfer | Result could not be received; retain input and permit retry without downloading partial output. | error |
@@ -222,7 +221,7 @@ Choose an image                       [Choose file] empty.png
 [Choose file] selected.png            Choose a non-empty image.
 Size limit · optional                 [Parameters disabled]
 [0]  [Mb v]                           [Process image, disabled]
-Ліміт ваги must be a positive
+Size limit must be a positive
 number with Mb or Kb or left empty.
 [Remaining form values retained]
 [Process image]
@@ -234,7 +233,7 @@ Server 422 without a field location appears at form level above Process image.
 ### WF-04 — Processing
 
 Use WF-02 with current values and available Preview preserved. Disable file
-selection and every parameter control including Ліміт ваги. Hide previous miss
+selection and every parameter control including Size limit. Hide previous miss
 facts. Status text is the single busy announcement.
 
 ```text
@@ -252,8 +251,7 @@ Processing your image…
 
 ### WF-05 — Recoverable error
 
-Use WF-02 with controls restored and current input retained, including Ліміт
-ваги and unit.
+Use WF-02 with controls restored and current input retained, including Size limit and unit.
 
 ```text
 [Current Preview, if available]
@@ -304,7 +302,7 @@ creating it is not part of this manifest.
 
 The owner confirmed SCR-01 without changes. Review the implementation against
 every state, including empty bound, bound-plus-JPEG-only submit, invalid bound
-kept original, loading lock of Ліміт ваги, miss keep-form with actual bytes,
+kept original, loading lock of Size limit, miss keep-form with actual bytes,
 met-limit reset that also clears bound and miss facts, new-file reset to Mb,
 stale completion suppression and clean reload. Check the keyboard journey for
 number and the unit selector, visible focus, owner-approved contrast for the

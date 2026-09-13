@@ -18,9 +18,9 @@ The project owner needs the existing single-image form to honour an independentl
 
 The trigger is the owner's personal workflow and roadmap step 3. There is no launch deadline or public-hosting requirement. Decision D2 (minimum quality and unattainable limits) is closed in this specification.
 
-The committed approach is one form with an independent Ліміт ваги. When supplied, it is the primary constraint: the result may use fewer pixels than the supplied maxima and the original, without cropping, stretching, enlargement or a silent format change. Adjacent compress-to-size tools already offer kilobyte or megabyte targets, but they do not treat that target as a constraint that may undercut chosen maxima, and they do not auto-download a miss while leaving the form ready to retry. When the encoded result meets the bound or the bound is omitted, automatic download and form reset stay as they are today. When the bound cannot be met even at the technical minimum, the smallest result still downloads, the form is kept, and the actual size plus a notice that the bound was exceeded are shown so the owner can change settings and process again.
+The committed approach is one form with an independent Size limit. When supplied, it is the primary constraint: the result may use fewer pixels than the supplied maxima and the original, without cropping, stretching, enlargement or a silent format change. Adjacent compress-to-size tools already offer kilobyte or megabyte targets, but they do not treat that target as a constraint that may undercut chosen maxima, and they do not auto-download a miss while leaving the form ready to retry. When the encoded result meets the bound or the bound is omitted, automatic download and form reset stay as they are today. When the bound cannot be met even at the technical minimum, the smallest result still downloads, the form is kept, and the actual size plus a notice that the bound was exceeded are shown so the owner can change settings and process again.
 
-Traceability: this feature extends the current parameter fieldset rather than a second screen. Empty Ліміт ваги must preserve the existing geometry rule (largest proportional fit, no extra reduction). Upload byte and pixel caps stay unchanged and are not this bound.
+Traceability: this feature extends the current parameter fieldset rather than a second screen. Empty Size limit must preserve the existing geometry rule (largest proportional fit, no extra reduction). Upload byte and pixel caps stay unchanged and are not this bound.
 
 ## 2. Goals
 
@@ -38,103 +38,103 @@ Traceability: this feature extends the current parameter fieldset rather than a 
 
 ## 4. User stories
 
-### US-01: Set optional Ліміт ваги
-**As a** Власник картинки
-**I want** to set an independently optional Ліміт ваги as a positive decimal with a unit selector of Mb or Kb to the right of the number, Mb initially selected, empty meaning no bound
-**So that** the Результат can target a file-size budget, and a supplied Ліміт ваги counts as a transformation parameter (processing may run with only that bound and the initial JPEG).
+### US-01: Set optional Size limit
+**As an** Image owner
+**I want** to set an independently optional Size limit as a positive decimal with a unit selector of Mb or Kb to the right of the number, Mb initially selected, empty meaning no bound
+**So that** the Result can target a file-size budget, and a supplied Size limit counts as a transformation parameter (processing may run with only that bound and the initial JPEG).
 
 ### US-02: Shrink below dimension ceiling
-**As a** Власник картинки
-**I want** a supplied Ліміт ваги to outrank Максимальні розміри as a floor
-**So that** the system may reduce pixels below those maxima and below the Оригінал to meet the budget, while maxima remain a ceiling, without cropping, stretching, enlargement or a silent format change.
+**As an** Image owner
+**I want** a supplied Size limit to outrank Maximum dimensions as a floor
+**So that** the system may reduce pixels below those maxima and below the Original to meet the budget, while maxima remain a ceiling, without cropping, stretching, enlargement or a silent format change.
 
 ### US-03: Download when within limit
-**As a** Власник картинки
-**I want** a Результат that meets the Ліміт ваги, or processing with an empty Ліміт ваги, to download automatically and the form to reset
+**As an** Image owner
+**I want** a Result that meets the Size limit, or processing with an empty Size limit, to download automatically and the form to reset
 **So that** success stays the same as today's flow and no result characteristics remain on the page.
 
 ### US-04: Retry after a miss
-**As a** Власник картинки
-**I want** the smallest Результат still downloaded when the Ліміт ваги cannot be met, the form kept, and the actual size plus that the bound was exceeded shown
+**As an** Image owner
+**I want** the smallest Result still downloaded when the Size limit cannot be met, the form kept, and the actual size plus that the bound was exceeded shown
 **So that** I can change settings and process again; a new file starts a new cycle.
 
-### US-05: Correct an invalid Ліміт ваги
-**As a** Власник картинки
-**I want** zero, negative or non-positive Ліміт ваги rejected with a clear reason
-**So that** I can fix the field without losing the Оригінал. Empty remains valid and means no bound.
+### US-05: Correct an invalid Size limit
+**As an** Image owner
+**I want** zero, negative or non-positive Size limit rejected with a clear reason
+**So that** I can fix the field without losing the Original. Empty remains valid and means no bound.
 
 ## 5. Acceptance criteria
 
 ### AC-01 (US-01) — happy
-**Given** a selected Оригінал within the input limits,
-**When** Власник картинки leaves Ліміт ваги empty and processes,
+**Given** a selected Original within the input limits,
+**When** Image owner leaves Size limit empty and processes,
 **Then** no result byte bound is applied and dimension and format behaviour matches the existing form.
 
 ### AC-02 (US-01) — happy
-**Given** a selected Оригінал,
-**When** Власник картинки sets Ліміт ваги,
+**Given** a selected Original,
+**When** Image owner sets Size limit,
 **Then** the control is a numeric field that accepts a positive decimal, with a unit selector to the right of the number whose options are Mb and Kb and with Mb selected initially; empty remains allowed and means no bound.
 
 ### AC-03 (US-01) — happy
-**Given** a selected Оригінал and no Максимальні розміри,
-**When** Власник картинки supplies only a Ліміт ваги and leaves output format at the initial JPEG,
+**Given** a selected Original and no Maximum dimensions,
+**When** Image owner supplies only a Size limit and leaves output format at the initial JPEG,
 **Then** processing is allowed because a transformation parameter is supplied.
 
 ### AC-04 (US-02) — domain invariant
-**Given** supplied Максимальні розміри and an empty Ліміт ваги,
-**When** Власник картинки processes the Оригінал,
-**Then** the Результат uses the largest proportional scale that fits all supplied bounds without enlarging and with no additional reduction. An oriented original of 2400 by 1200 pixels with only maximum width 1200 yields 1200 by 600.
+**Given** supplied Maximum dimensions and an empty Size limit,
+**When** Image owner processes the Original,
+**Then** the Result uses the largest proportional scale that fits all supplied bounds without enlarging and with no additional reduction. An oriented original of 2400 by 1200 pixels with only maximum width 1200 yields 1200 by 600.
 
 ### AC-05 (US-02) — domain invariant
-**Given** a Ліміт ваги and optional Максимальні розміри,
-**When** Власник картинки processes the Оригінал,
-**Then** the Результат never exceeds any supplied dimension bound or either original oriented dimension, never enlarges, never crops or stretches, and keeps the chosen output format. Additional reduction happens only while the encoded file is larger than the Ліміт ваги and stops at the largest proportional size and highest encoding quality the chosen format allows that already meets the bound. If even one pixel and the smallest file of that format still exceed the bound, that is a miss under AC-07, not a rejection without a file. Each scaled dimension is rounded to the nearest whole pixel, with exact half-pixel values rounded up and a minimum of one pixel. An oriented original of 2400 by 1200 pixels with maximum width 1200 and a Ліміт ваги smaller than the 1200-by-600 encoding yields a result shorter than 1200 in width, with aspect ratio 2 to 1 subject to that rounding.
+**Given** a Size limit and optional Maximum dimensions,
+**When** Image owner processes the Original,
+**Then** the Result never exceeds any supplied dimension bound or either original oriented dimension, never enlarges, never crops or stretches, and keeps the chosen output format. Additional reduction happens only while the encoded file is larger than the Size limit and stops at the largest proportional size and highest encoding quality the chosen format allows that already meets the bound. If even one pixel and the smallest file of that format still exceed the bound, that is a miss under AC-07, not a rejection without a file. Each scaled dimension is rounded to the nearest whole pixel, with exact half-pixel values rounded up and a minimum of one pixel. An oriented original of 2400 by 1200 pixels with maximum width 1200 and a Size limit smaller than the 1200-by-600 encoding yields a result shorter than 1200 in width, with aspect ratio 2 to 1 subject to that rounding.
 
 ### AC-06 (US-03) — happy
-**Given** a Ліміт ваги that the Результат can meet, or an empty Ліміт ваги,
+**Given** a Size limit that the Result can meet, or an empty Size limit,
 **When** processing completes successfully,
-**Then** the page initiates exactly one automatic download of a Результат whose size in bytes is at most the Ліміт ваги when one was supplied, then resets the form to the initial empty state: the selected file, Preview, Результат, errors, miss facts, both dimension limits and Ліміт ваги are cleared and format returns to JPEG.
+**Then** the page initiates exactly one automatic download of a Result whose size in bytes is at most the Size limit when one was supplied, then resets the form to the initial empty state: the selected file, Preview, Result, errors, miss facts, both dimension limits and Size limit are cleared and format returns to JPEG.
 
 ### AC-07 (US-04) — happy
-**Given** a Ліміт ваги that cannot be met even at one pixel and the smallest file the chosen format can produce,
+**Given** a Size limit that cannot be met even at one pixel and the smallest file the chosen format can produce,
 **When** processing completes,
-**Then** a Результат is still produced in the chosen format and one automatic download starts; the form is not reset; the page shows the actual Результат size and that the Ліміт ваги was exceeded; the Оригінал and parameters remain so the owner can change them and process again.
+**Then** a Result is still produced in the chosen format and one automatic download starts; the form is not reset; the page shows the actual Result size and that the Size limit was exceeded; the Original and parameters remain so the owner can change them and process again.
 
 ### AC-08 (US-05) — error
-**Given** a filled Ліміт ваги that is zero, negative or not a positive number,
+**Given** a filled Size limit that is zero, negative or not a positive number,
 **When** processing is attempted,
-**Then** the system rejects the attempt, explains that Ліміт ваги must be a positive number with Mb or Kb or left empty, produces no Результат, and keeps the Оригінал.
+**Then** the system rejects the attempt, explains that Size limit must be a positive number with Mb or Kb or left empty, produces no Result, and keeps the Original.
 
 ### AC-09 (US-03, US-04) — authorization
-**Given** a Результат belongs to a different operation or is no longer available to the current page,
-**When** Власник картинки attempts to retrieve it,
+**Given** a Result belongs to a different operation or is no longer available to the current page,
+**When** Image owner attempts to retrieve it,
 **Then** the application provides no history, lookup or retrieval capability for that result and discloses no image from another operation; no account or ownership-verification system is introduced.
 
 ### AC-10 (US-01, US-04) — cross-context
-**Given** an Оригінал has been selected, including after a miss,
-**When** Власник картинки makes a new file selection,
-**Then** the previous Preview, miss facts, errors, dimensions, format and Ліміт ваги reset (empty bound, JPEG); delayed work for an old selection or completed operation must never replace the current Preview, show an old miss or trigger another download.
+**Given** an Original has been selected, including after a miss,
+**When** Image owner makes a new file selection,
+**Then** the previous Preview, miss facts, errors, dimensions, format and Size limit reset (empty bound, JPEG); delayed work for an old selection or completed operation must never replace the current Preview, show an old miss or trigger another download.
 
 ### AC-11 (US-04) — cross-context
 **Given** processing is in progress,
-**When** Власник картинки waits, starts another process, processing fails or the page closes,
-**Then** file selection and all transformation controls including Ліміт ваги are disabled while processing, a truthful busy state is shown without fabricated percentages, a new process replaces previous miss facts, only the current operation may initiate a download, recoverable failure restores retry with the selected file and parameters, and closing or reloading the page restores neither input nor result. After a miss, those controls remain usable so the owner can change settings and process again.
+**When** Image owner waits, starts another process, processing fails or the page closes,
+**Then** file selection and all transformation controls including Size limit are disabled while processing, a truthful busy state is shown without fabricated percentages, a new process replaces previous miss facts, only the current operation may initiate a download, recoverable failure restores retry with the selected file and parameters, and closing or reloading the page restores neither input nor result. After a miss, those controls remain usable so the owner can change settings and process again.
 
 ### AC-12 (US-01, US-02) — domain invariant
-**Given** a supplied Ліміт ваги,
-**When** the encoded Результат is compared with that bound,
-**Then** the bound in bytes equals the entered number multiplied by 1,000,000 for Mb or by 1,000 for Kb, comparison uses whole bytes of the encoded Результат, and 0.5 Mb equals 500,000 bytes.
+**Given** a supplied Size limit,
+**When** the encoded Result is compared with that bound,
+**Then** the bound in bytes equals the entered number multiplied by 1,000,000 for Mb or by 1,000 for Kb, comparison uses whole bytes of the encoded Result, and 0.5 Mb equals 500,000 bytes.
 
 ## 6. Non-functional requirements
 
 | Aspect | Target | Measurement |
 |---|---|---|
-| Input limits | At most 20,000,000 bytes and 40,000,000 decoded pixels of the selected static image; equality allowed; Ліміт ваги is not an upload cap | Existing processing-boundary checks; selection still rejects empty files and files above the byte limit before Preview |
-| Ліміт ваги arithmetic | 1 Mb = 1,000,000 bytes; 1 Kb = 1,000 bytes; comparison after encoding in whole bytes | Fixture: 0.5 Mb = 500,000 bytes; 200 Kb = 200,000 bytes |
-| Form concurrency | At most one submitted processing operation; file selection and all transformation controls including Ліміт ваги disabled while processing | Duplicate-submit checks; miss-retry remains single-flight |
-| Miss visibility | After an over-limit Результат, actual size and the exceeded notice remain until the next process, a new file selection or page close | Browser check of the kept form |
-| Transient resources | Zero server-side originals or results after the operation lifecycle; a miss does not create retrievable history. The current page may keep the Оригінал and parameters through a miss until a new file selection, a met-limit reset or page close | Success, miss, failure and interruption lifecycle checks |
-| Accessibility | Every interactive control including the Ліміт ваги number and unit is keyboard-usable with visible focus; labels, errors and the exceeded notice pass the project owner's manual readable-contrast review; reduced motion as on the existing form | Keyboard flow, visible-focus review, owner contrast acceptance, reduced-motion check |
+| Input limits | At most 20,000,000 bytes and 40,000,000 decoded pixels of the selected static image; equality allowed; Size limit is not an upload cap | Existing processing-boundary checks; selection still rejects empty files and files above the byte limit before Preview |
+| Size limit arithmetic | 1 Mb = 1,000,000 bytes; 1 Kb = 1,000 bytes; comparison after encoding in whole bytes | Fixture: 0.5 Mb = 500,000 bytes; 200 Kb = 200,000 bytes |
+| Form concurrency | At most one submitted processing operation; file selection and all transformation controls including Size limit disabled while processing | Duplicate-submit checks; miss-retry remains single-flight |
+| Miss visibility | After an over-limit Result, actual size and the exceeded notice remain until the next process, a new file selection or page close | Browser check of the kept form |
+| Transient resources | Zero server-side originals or results after the operation lifecycle; a miss does not create retrievable history. The current page may keep the Original and parameters through a miss until a new file selection, a met-limit reset or page close | Success, miss, failure and interruption lifecycle checks |
+| Accessibility | Every interactive control including the Size limit number and unit is keyboard-usable with visible focus; labels, errors and the exceeded notice pass the project owner's manual readable-contrast review; reduced motion as on the existing form | Keyboard flow, visible-focus review, owner contrast acceptance, reduced-motion check |
 | Responsive UI | Complete flow at viewport widths 360 and 1280 CSS pixels with no horizontal page overflow, including the unit choice beside the number | Browser visual review at both widths |
 
 Performance latency, throughput and timing benchmarks are N/A by explicit owner decision. Public-service uptime targets are N/A for this local-only feature.
@@ -151,10 +151,10 @@ Performance latency, throughput and timing benchmarks are N/A by explicit owner 
 
 Acceptance indicators rather than usage analytics; all targets are due before this feature is declared complete. Baseline for each is 0.
 
-- Met-limit journey — target: automatic download and form reset with Результат bytes at most the Ліміт ваги on agreed JPEG, PNG and WebP controls.
+- Met-limit journey — target: automatic download and form reset with Result bytes at most the Size limit on agreed JPEG, PNG and WebP controls.
 - Miss journey — target: automatic download of the smallest file, form not reset, actual size and exceeded notice visible.
-- Geometry — target: empty Ліміт ваги keeps 2400 by 1200 with max width 1200 at 1200 by 600; a smaller bound yields width under 1200 with preserved aspect ratio.
-- Invalid Ліміт ваги — target: zero and negative values rejected while the Оригінал remains.
+- Geometry — target: empty Size limit keeps 2400 by 1200 with max width 1200 at 1200 by 600; a smaller bound yields width under 1200 with preserved aspect ratio.
+- Invalid Size limit — target: zero and negative values rejected while the Original remains.
 
 No analytics collection or timing measurement is added.
 
@@ -164,7 +164,7 @@ None at the product-requirement level. D2 and the unit, miss and extra-shrink de
 
 ## Test plan
 
-Optional Ліміт ваги on the existing one-form flow: empty bound keeps today's geometry; a supplied bound may shrink below maxima; a miss still downloads and keeps the form. Size S and route quick from `.size` / `.route`. Levels chosen in planning: unit, integration, contract, e2e-through-UI. No component, visual-regression or load suite.
+Optional Size limit on the existing one-form flow: empty bound keeps today's geometry; a supplied bound may shrink below maxima; a miss still downloads and keeps the form. Size S and route quick from `.size` / `.route`. Levels chosen in planning: unit, integration, contract, e2e-through-UI. No component, visual-regression or load suite.
 
 ### AC coverage
 

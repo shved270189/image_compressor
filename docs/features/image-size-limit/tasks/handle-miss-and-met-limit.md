@@ -23,14 +23,14 @@ file: "docs/features/image-size-limit/tasks/handle-miss-and-met-limit.md"
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** a Результат that meets the Ліміт ваги, or processing with an empty Ліміт ваги, to download automatically and the form to reset
+> **As an** Image owner
+> **I want** a Result that meets the Size limit, or processing with an empty Size limit, to download automatically and the form to reset
 > **So that** success stays the same as today's flow and no result characteristics remain on the page.
 >
 > — `spec.md §4, US-03, verbatim` · full text: [spec.md](../spec.md)
 
-> **As a** Власник картинки
-> **I want** the smallest Результат still downloaded when the Ліміт ваги cannot be met, the form kept, and the actual size plus that the bound was exceeded shown
+> **As an** Image owner
+> **I want** the smallest Result still downloaded when the Size limit cannot be met, the form kept, and the actual size plus that the bound was exceeded shown
 > **So that** I can change settings and process again; a new file starts a new cycle.
 >
 > — `spec.md §4, US-04, verbatim` · full text: [spec.md](../spec.md)
@@ -39,7 +39,7 @@ This task starts one download, then resets or keeps the form from the miss heade
 
 ## Inlined context
 
-> **SCR-01 states this task builds:** loading (disable file selection and all transformation controls including Ліміт ваги; `Processing…` without percentages or Cancel; a new process replaces previous miss facts); success (complete 200 of the current operation and omitted bound or `X-Size-Limit-Met: true`: one download, then reset to empty); miss (complete 200 and `X-Size-Limit-Met: false`: one download, do not reset, show `The result is {N} bytes. The size limit was exceeded.` from `X-Result-Bytes`, controls usable); error (400/500/transfer failure: no download, retain file and parameters, restore controls).
+> **SCR-01 states this task builds:** loading (disable file selection and all transformation controls including Size limit; `Processing…` without percentages or Cancel; a new process replaces previous miss facts); success (complete 200 of the current operation and omitted bound or `X-Size-Limit-Met: true`: one download, then reset to empty); miss (complete 200 and `X-Size-Limit-Met: false`: one download, do not reset, show `The result is {N} bytes. The size limit was exceeded.` from `X-Result-Bytes`, controls usable); error (400/500/transfer failure: no download, retain file and parameters, restore controls).
 >
 > — `screens.md, SCR-01 Image processing, abridged` · full text: [screens.md](../screens.md)
 
@@ -51,7 +51,7 @@ This task starts one download, then resets or keeps the form from the miss heade
 >
 > — `adr/0002-signal-size-limit-miss-with-headers.md, Neutral consequences, abridged` · full text: [adr/0002-signal-size-limit-miss-with-headers.md](../adr/0002-signal-size-limit-miss-with-headers.md)
 
-> **Hard rule:** At most one submitted processing operation; file selection and all transformation controls including Ліміт ваги disabled while processing. A tight bound can hold the only screen in a busy state with no cancel — keep a truthful busy state without fabricated percentages.
+> **Hard rule:** At most one submitted processing operation; file selection and all transformation controls including Size limit disabled while processing. A tight bound can hold the only screen in a busy state with no cancel — keep a truthful busy state without fabricated percentages.
 >
 > — `spec.md §6, Form concurrency` and `sad.md §11, RISK busy/no-cancel, abridged` · full text: [spec.md](../spec.md)
 
@@ -74,41 +74,41 @@ No DB changes.
 
 ### AC-06 — happy
 
-> **Given** a Ліміт ваги that the Результат can meet, or an empty Ліміт ваги,
+> **Given** a Size limit that the Result can meet, or an empty Size limit,
 > **When** processing completes successfully,
-> **Then** the page initiates exactly one automatic download of a Результат whose size in bytes is at most the Ліміт ваги when one was supplied, then resets the form to the initial empty state: the selected file, Preview, Результат, errors, miss facts, both dimension limits and Ліміт ваги are cleared and format returns to JPEG.
+> **Then** the page initiates exactly one automatic download of a Result whose size in bytes is at most the Size limit when one was supplied, then resets the form to the initial empty state: the selected file, Preview, Result, errors, miss facts, both dimension limits and Size limit are cleared and format returns to JPEG.
 >
 > — `spec.md §5, AC-06, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-07 — happy
 
-> **Given** a Ліміт ваги that cannot be met even at one pixel and the smallest file the chosen format can produce,
+> **Given** a Size limit that cannot be met even at one pixel and the smallest file the chosen format can produce,
 > **When** processing completes,
-> **Then** a Результат is still produced in the chosen format and one automatic download starts; the form is not reset; the page shows the actual Результат size and that the Ліміт ваги was exceeded; the Оригінал and parameters remain so the owner can change them and process again.
+> **Then** a Result is still produced in the chosen format and one automatic download starts; the form is not reset; the page shows the actual Result size and that the Size limit was exceeded; the Original and parameters remain so the owner can change them and process again.
 >
 > — `spec.md §5, AC-07, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-09 — authorization
 
-> **Given** a Результат belongs to a different operation or is no longer available to the current page,
-> **When** Власник картинки attempts to retrieve it,
+> **Given** a Result belongs to a different operation or is no longer available to the current page,
+> **When** Image owner attempts to retrieve it,
 > **Then** the application provides no history, lookup or retrieval capability for that result and discloses no image from another operation; no account or ownership-verification system is introduced.
 >
 > — `spec.md §5, AC-09, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-10 — cross-context
 
-> **Given** an Оригінал has been selected, including after a miss,
-> **When** Власник картинки makes a new file selection,
-> **Then** the previous Preview, miss facts, errors, dimensions, format and Ліміт ваги reset (empty bound, JPEG); delayed work for an old selection or completed operation must never replace the current Preview, show an old miss or trigger another download.
+> **Given** an Original has been selected, including after a miss,
+> **When** Image owner makes a new file selection,
+> **Then** the previous Preview, miss facts, errors, dimensions, format and Size limit reset (empty bound, JPEG); delayed work for an old selection or completed operation must never replace the current Preview, show an old miss or trigger another download.
 >
 > — `spec.md §5, AC-10, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-11 — cross-context
 
 > **Given** processing is in progress,
-> **When** Власник картинки waits, starts another process, processing fails or the page closes,
-> **Then** file selection and all transformation controls including Ліміт ваги are disabled while processing, a truthful busy state is shown without fabricated percentages, a new process replaces previous miss facts, only the current operation may initiate a download, recoverable failure restores retry with the selected file and parameters, and closing or reloading the page restores neither input nor result. After a miss, those controls remain usable so the owner can change settings and process again.
+> **When** Image owner waits, starts another process, processing fails or the page closes,
+> **Then** file selection and all transformation controls including Size limit are disabled while processing, a truthful busy state is shown without fabricated percentages, a new process replaces previous miss facts, only the current operation may initiate a download, recoverable failure restores retry with the selected file and parameters, and closing or reloading the page restores neither input nor result. After a miss, those controls remain usable so the owner can change settings and process again.
 >
 > — `spec.md §5, AC-11, verbatim` · full text: [spec.md](../spec.md)
 

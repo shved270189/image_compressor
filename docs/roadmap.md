@@ -21,7 +21,7 @@ The owner can use a modern local single-page form to resize, convert and compres
 
 **Resize and convert an image** delivers the complete selection-to-download flow, independently optional maximum width and height, aspect-ratio preservation, format selection with JPEG as the default and actual result dimensions and file size. An optional frontend-only preview appears above the form when the browser can display the selected file; it never uploads the file or blocks processing when unavailable. It includes the responsive visual design, accessible controls, clear errors and motion required by the brief, with mobile, desktop and reduced-motion verification. Upload limits and cleanup apply from this first processing increment. File-size targeting belongs to the following increment. The [feature specification](features/image-resize-convert/spec.md) records the agreed behavior.
 
-**Compress an image to a file-size limit** extends the same form and processing path with an independently optional Ліміт ваги, automatic dimension reduction when needed and visible handling when the bound cannot be met. Omitting any constraint leaves that constraint unset; all three may be omitted. The [feature specification](features/image-size-limit/spec.md) records the agreed behavior.
+**Compress an image to a file-size limit** extends the same form and processing path with an independently optional Size limit, automatic dimension reduction when needed and visible handling when the bound cannot be met. Omitting any constraint leaves that constraint unset; all three may be omitted. The [feature specification](features/image-size-limit/spec.md) records the agreed behavior.
 
 Size M reflects the foundation's module and API setup, and the first feature's new processing module, HTTP interface and complete UI flow. Size S reflects the bounded extension of that existing flow for file-size targeting.
 
@@ -52,7 +52,7 @@ D2 is resolved in [image-size-limit spec.md](features/image-size-limit/spec.md):
 - Limit this roadmap to local use — [Out of scope](#out-of-scope), as selected by the owner during roadmap review.
 - Enforce request-scoped image limits and cleanup without later retrieval — [ADR 0004](features/image-resize-convert/adr/0004-return-results-within-the-current-operation.md) (closes D3).
 
-Input/output formats and upload limits (D1) are resolved in [spec.md §5. Acceptance criteria](features/image-resize-convert/spec.md#5-acceptance-criteria) and [§6. Non-functional requirements](features/image-resize-convert/spec.md#6-non-functional-requirements). Minimum quality, unattainable file-size limits and extra shrink when a Ліміт ваги is supplied (D2) are resolved in [image-size-limit spec.md](features/image-size-limit/spec.md).
+Input/output formats and upload limits (D1) are resolved in [spec.md §5. Acceptance criteria](features/image-resize-convert/spec.md#5-acceptance-criteria) and [§6. Non-functional requirements](features/image-resize-convert/spec.md#6-non-functional-requirements). Minimum quality, unattainable file-size limits and extra shrink when a Size limit is supplied (D2) are resolved in [image-size-limit spec.md](features/image-size-limit/spec.md).
 
 ## Dependency graph
 

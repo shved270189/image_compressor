@@ -24,7 +24,7 @@ file: "docs/features/image-resize-convert/tasks/bound-multipart-parsing.md"
 
 ## Why (user story)
 
-> **As a** Власник картинки
+> **As an** Image owner
 > **I want** clear validation and processing errors with a retry
 > **So that** I can correct my input without unnecessary reselection.
 
@@ -92,9 +92,9 @@ No DB changes.
 
 ### AC-12 (US-05) — error
 
-> **Given** an empty, corrupted, unsupported or animated Оригінал, or an input above 20 million bytes or 40 million decoded pixels,
+> **Given** an empty, corrupted, unsupported or animated Original, or an input above 20 million bytes or 40 million decoded pixels,
 > **When** processing is attempted,
-> **Then** the system rejects it with an understandable reason and produces no successful Результат; exact limits are allowed, support is determined from actual content, and additional HEIC images are subject to the primary-image rule rather than treated as animation. The form checks only whether the selected file is empty or exceeds the byte limit before preparing Preview; the server checks content, animation and decoded pixel count when processing is submitted, and enforces all input limits even when form restrictions are bypassed.
+> **Then** the system rejects it with an understandable reason and produces no successful Result; exact limits are allowed, support is determined from actual content, and additional HEIC images are subject to the primary-image rule rather than treated as animation. The form checks only whether the selected file is empty or exceeds the byte limit before preparing Preview; the server checks content, animation and decoded pixel count when processing is submitted, and enforces all input limits even when form restrictions are bypassed.
 
 — `spec.md §5, AC-12, verbatim` · [Full text](../spec.md)
 

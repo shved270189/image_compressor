@@ -10,7 +10,7 @@ owner: "Tech Lead"
 estimate: "S"
 context_budget: "M"
 status: "todo"
-dod: "README.md and docs/architecture-map.md describe optional Ліміт ваги, miss versus met-limit, and the current OpenAPI path; documented build, pytest and both lint commands pass."
+dod: "README.md and docs/architecture-map.md describe optional Size limit, miss versus met-limit, and the current OpenAPI path; documented build, pytest and both lint commands pass."
 file: "docs/features/image-size-limit/tasks/document-size-limit-workflow.md"
 ---
 
@@ -23,9 +23,9 @@ file: "docs/features/image-size-limit/tasks/document-size-limit-workflow.md"
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** to set an independently optional Ліміт ваги as a positive decimal with a unit choice of Mb or Kb to the left of the number, Mb initially selected, empty meaning no bound
-> **So that** the Результат can target a file-size budget, and a supplied Ліміт ваги counts as a transformation parameter (processing may run with only that bound and the initial JPEG).
+> **As an** Image owner
+> **I want** to set an independently optional Size limit as a positive decimal with a unit choice of Mb or Kb to the left of the number, Mb initially selected, empty meaning no bound
+> **So that** the Result can target a file-size budget, and a supplied Size limit counts as a transformation parameter (processing may run with only that bound and the initial JPEG).
 >
 > — `spec.md §4, US-01, verbatim` · full text: [spec.md](../spec.md)
 
@@ -49,7 +49,7 @@ This task updates usage docs so the shipped bound and miss path match the code.
 >
 > — `sad.md §2, Technical constraints, abridged` · full text: [sad.md](../sad.md)
 
-> **Hard rule:** Showing result characteristics after a met-limit or omitted-limit success stays out of scope. Empty Ліміт ваги preserves existing geometry. Ліміт ваги is not the upload cap.
+> **Hard rule:** Showing result characteristics after a met-limit or omitted-limit success stays out of scope. Empty Size limit preserves existing geometry. Size limit is not the upload cap.
 >
 > — `spec.md §3, Non-goals` and `spec.md §1, Traceability, abridged` · full text: [spec.md](../spec.md)
 
@@ -68,23 +68,23 @@ Internal — no API surface. Docs cite `POST /api/v1/images/process` and the fea
 
 ### AC-01 — happy
 
-> **Given** a selected Оригінал within the input limits,
-> **When** Власник картинки leaves Ліміт ваги empty and processes,
+> **Given** a selected Original within the input limits,
+> **When** Image owner leaves Size limit empty and processes,
 > **Then** no result byte bound is applied and dimension and format behaviour matches the existing form.
 >
 > — `spec.md §5, AC-01, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-09 — authorization
 
-> **Given** a Результат belongs to a different operation or is no longer available to the current page,
-> **When** Власник картинки attempts to retrieve it,
+> **Given** a Result belongs to a different operation or is no longer available to the current page,
+> **When** Image owner attempts to retrieve it,
 > **Then** the application provides no history, lookup or retrieval capability for that result and discloses no image from another operation; no account or ownership-verification system is introduced.
 >
 > — `spec.md §5, AC-09, verbatim` · full text: [spec.md](../spec.md)
 
 ## Checklist
 
-- [ ] Update `README.md` Image workflow: optional Size limit (Mb/Kb), empty means no bound, extra-shrink when supplied, miss still downloads and keeps the form, met/omitted bound still auto-downloads and resets. Keep upload/pixel caps distinct from Ліміт ваги.
+- [ ] Update `README.md` Image workflow: optional Size limit (Mb/Kb), empty means no bound, extra-shrink when supplied, miss still downloads and keeps the form, met/omitted bound still auto-downloads and resets. Keep upload/pixel caps distinct from Size limit.
 - [ ] Point the contract link at `docs/features/image-size-limit/contracts/openapi.yaml`. Point implementation checks at this feature's tracker.
 - [ ] Update `docs/architecture-map.md` so the frontend precedent names the shipped Size limit control and miss headers, not a hypothetical future field.
 - [ ] Confirm documented `npm --prefix frontend run build`, `uv run pytest`, `uv run ruff check .` and `npm --prefix frontend run lint` still match README.
@@ -99,6 +99,6 @@ Internal — no API surface. Docs cite `POST /api/v1/images/process` and the fea
 
 ## Definition of Done
 
-- [ ] README.md and docs/architecture-map.md describe optional Ліміт ваги, miss versus met-limit, and the current OpenAPI path; documented build, pytest and both lint commands pass.
+- [ ] README.md and docs/architecture-map.md describe optional Size limit, miss versus met-limit, and the current OpenAPI path; documented build, pytest and both lint commands pass.
 - [ ] every Hard Rule inlined above still holds
 - [ ] lint + vet clean

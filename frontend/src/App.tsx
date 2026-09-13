@@ -103,7 +103,7 @@ export default function App() {
     setMiss(null)
     if (bad.length) {
       setError(bad.includes('size_limit')
-        ? 'Ліміт ваги must be a positive number with Mb or Kb or left empty'
+        ? 'Size limit must be a positive number with Mb or Kb or left empty'
         : 'Dimensions must be positive whole pixel counts, or blank.')
       return
     }

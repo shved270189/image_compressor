@@ -23,15 +23,15 @@ file: "docs/features/image-size-limit/tasks/parse-and-convert-size-limit.md"
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** to set an independently optional Ліміт ваги as a positive decimal with a unit choice of Mb or Kb to the left of the number, Mb initially selected, empty meaning no bound
-> **So that** the Результат can target a file-size budget, and a supplied Ліміт ваги counts as a transformation parameter (processing may run with only that bound and the initial JPEG).
+> **As an** Image owner
+> **I want** to set an independently optional Size limit as a positive decimal with a unit choice of Mb or Kb to the left of the number, Mb initially selected, empty meaning no bound
+> **So that** the Result can target a file-size budget, and a supplied Size limit counts as a transformation parameter (processing may run with only that bound and the initial JPEG).
 >
 > — `spec.md §4, US-01, verbatim` · full text: [spec.md](../spec.md)
 
-> **As a** Власник картинки
-> **I want** zero, negative or non-positive Ліміт ваги rejected with a clear reason
-> **So that** I can fix the field without losing the Оригінал. Empty remains valid and means no bound.
+> **As an** Image owner
+> **I want** zero, negative or non-positive Size limit rejected with a clear reason
+> **So that** I can fix the field without losing the Original. Empty remains valid and means no bound.
 >
 > — `spec.md §4, US-05, verbatim` · full text: [spec.md](../spec.md)
 
@@ -43,19 +43,19 @@ This task accepts, converts or rejects the multipart bound at the HTTP boundary.
 >
 > — `sad.md §8, Bound transport, abridged` · full text: [sad.md](../sad.md)
 
-> `backend/main.py` — Multipart validation including Ліміт ваги, byte conversion, response headers, resource ownership
+> `backend/main.py` — Multipart validation including Size limit, byte conversion, response headers, resource ownership
 >
 > — `sad.md §5, building block view, abridged` · full text: [sad.md](../sad.md)
 
-> Bound empty: apply no result byte bound, keep existing dimension and format rules. Bound is a positive number: accept as a transformation parameter, including JPEG only and no maxima. Bound is zero, negative, or not a positive number: reject, keep Оригінал.
+> Bound empty: apply no result byte bound, keep existing dimension and format rules. Bound is a positive number: accept as a transformation parameter, including JPEG only and no maxima. Bound is zero, negative, or not a positive number: reject, keep Original.
 >
-> — `sad.md §6, Set optional Ліміт ваги, abridged` · full text: [sad.md](../sad.md)
+> — `sad.md §6, Set optional Size limit, abridged` · full text: [sad.md](../sad.md)
 
 > **Decision:** Optional request fields `size_limit` and `size_unit` carry the bound; the Application converts them to whole bytes.
 >
 > — `adr/0002-signal-size-limit-miss-with-headers.md, Decision outcome, abridged` · full text: [adr/0002-signal-size-limit-miss-with-headers.md](../adr/0002-signal-size-limit-miss-with-headers.md)
 
-> **Hard rule:** HTTP validation belongs in `backend/main.py`. Ліміт ваги is not an upload cap. Accept at most 20,000,000 file bytes and 40,000,000 decoded pixels, equality allowed.
+> **Hard rule:** HTTP validation belongs in `backend/main.py`. Size limit is not an upload cap. Accept at most 20,000,000 file bytes and 40,000,000 decoded pixels, equality allowed.
 >
 > — `sad.md §2 and spec.md §6, Input limits, abridged` · full text: [sad.md](../sad.md)
 
@@ -80,33 +80,33 @@ No DB changes.
 
 ### AC-01 — happy
 
-> **Given** a selected Оригінал within the input limits,
-> **When** Власник картинки leaves Ліміт ваги empty and processes,
+> **Given** a selected Original within the input limits,
+> **When** Image owner leaves Size limit empty and processes,
 > **Then** no result byte bound is applied and dimension and format behaviour matches the existing form.
 >
 > — `spec.md §5, AC-01, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-03 — happy
 
-> **Given** a selected Оригінал and no Максимальні розміри,
-> **When** Власник картинки supplies only a Ліміт ваги and leaves output format at the initial JPEG,
+> **Given** a selected Original and no Maximum dimensions,
+> **When** Image owner supplies only a Size limit and leaves output format at the initial JPEG,
 > **Then** processing is allowed because a transformation parameter is supplied.
 >
 > — `spec.md §5, AC-03, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-08 — error
 
-> **Given** a filled Ліміт ваги that is zero, negative or not a positive number,
+> **Given** a filled Size limit that is zero, negative or not a positive number,
 > **When** processing is attempted,
-> **Then** the system rejects the attempt, explains that Ліміт ваги must be a positive number with Mb or Kb or left empty, produces no Результат, and keeps the Оригінал.
+> **Then** the system rejects the attempt, explains that Size limit must be a positive number with Mb or Kb or left empty, produces no Result, and keeps the Original.
 >
 > — `spec.md §5, AC-08, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-12 — domain invariant
 
-> **Given** a supplied Ліміт ваги,
-> **When** the encoded Результат is compared with that bound,
-> **Then** the bound in bytes equals the entered number multiplied by 1,048,576 for Mb or by 1,024 for Kb, comparison uses whole bytes of the encoded Результат, and 0.5 Mb equals 524,288 bytes.
+> **Given** a supplied Size limit,
+> **When** the encoded Result is compared with that bound,
+> **Then** the bound in bytes equals the entered number multiplied by 1,048,576 for Mb or by 1,024 for Kb, comparison uses whole bytes of the encoded Result, and 0.5 Mb equals 524,288 bytes.
 >
 > — `spec.md §5, AC-12, verbatim` · full text: [spec.md](../spec.md)
 

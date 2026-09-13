@@ -7,7 +7,7 @@ info:
     single-image process call. When the bound is attainable, return the largest
     proportional result that still fits. When it is not, still return the
     smallest chosen-format file and signal the miss so the owner can retry.
-    Empty Ліміт ваги preserves today's geometry. Selection and optional Preview
+    Empty Size limit preserves today's geometry. Selection and optional Preview
     remain local browser actions and never upload a file by themselves.
 
     This contract extends the shipped `POST /api/v1/images/process` surface.
@@ -45,7 +45,7 @@ paths:
         Detect static JPEG, PNG, WebP or HEIC from actual content, independently
         of the filename or declared media type. Accept at most 20,000,000 file
         bytes and 40,000,000 decoded pixels, including equality. The byte limit
-        applies to the file, not the multipart envelope, and is not Ліміт ваги.
+        applies to the file, not the multipart envelope, and is not Size limit.
         Bound multipart parsing to 20,065,536 total body bytes, 16,384 cumulative
         multipart header-name and header-value bytes, and 1,024 bytes per text
         field (413 on excess). Accept one file part named file and at most the
@@ -258,7 +258,7 @@ paths:
             File exceeds 20,000,000 bytes or the selected static image exceeds
             40,000,000 decoded pixels, including a post-decode dimension recheck.
             Equality at either limit is accepted. Multipart overhead is not
-            counted against the file-byte allowance. Ліміт ваги is not this cap.
+            counted against the file-byte allowance. Size limit is not this cap.
           content:
             application/json:
               schema:
@@ -287,7 +287,7 @@ paths:
           description: |
             Result dimensions above the selected encoder limit;
             missing file or all transformation parameters; invalid dimensions,
-            output choice or Ліміт ваги; empty, corrupted or animated input.
+            output choice or Size limit; empty, corrupted or animated input.
             Parameter errors may use FastAPI's structured validation envelope;
             explicit HTTP rejections use a readable detail string. Messages are
             explanatory, not stable machine error codes. When multiple problems
@@ -422,7 +422,7 @@ components:
       type: number
       exclusiveMinimum: 0
       description: |
-        Positive decimal Ліміт ваги. Bound bytes equal this number × 1,000,000
+        Positive decimal Size limit. Bound bytes equal this number × 1,000,000
         for mb or × 1,000 for kb. Comparison uses whole encoded result bytes.
     SizeLimit:
       anyOf:

@@ -24,9 +24,9 @@ file: "docs/features/image-resize-convert/tasks/preserve-compatible-color-profil
 
 ## Why (user story)
 
-> **As a** Власник картинки
+> **As an** Image owner
 > **I want** to choose JPEG, PNG or WebP, with JPEG initially selected
-> **So that** I receive a Результат in the desired supported format.
+> **So that** I receive a Result in the desired supported format.
 
 — `spec.md §4, US-03, verbatim` · [Full text](../spec.md)
 
@@ -87,9 +87,9 @@ Internal — no API surface.
 
 ### AC-09 (US-01, US-03) — domain invariant
 
-> **Given** an Оригінал with orientation information or service metadata,
-> **When** Власник картинки processes it,
-> **Then** the Результат and any available Preview have the correct visible orientation, and dimension limits apply to that orientation; the Результат omits GPS, camera and textual metadata while retaining information required for correct color interpretation.
+> **Given** an Original with orientation information or service metadata,
+> **When** Image owner processes it,
+> **Then** the Result and any available Preview have the correct visible orientation, and dimension limits apply to that orientation; the Result omits GPS, camera and textual metadata while retaining information required for correct color interpretation.
 
 — `spec.md §5, AC-09, verbatim` · [Full text](../spec.md)
 

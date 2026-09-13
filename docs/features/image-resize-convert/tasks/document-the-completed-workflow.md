@@ -24,9 +24,9 @@ file: "docs/features/image-resize-convert/tasks/document-the-completed-workflow.
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** the Результат to download automatically after successful processing and the form to reset
-> **So that** I can use the completed file without overwriting the Оригінал and immediately select the next image.
+> **As an** Image owner
+> **I want** the Result to download automatically after successful processing and the form to reset
+> **So that** I can use the completed file without overwriting the Original and immediately select the next image.
 
 — `spec.md §4, US-04, verbatim` · [Full text](../spec.md)
 
@@ -80,32 +80,32 @@ No DB changes.
 
 ### AC-01 (US-01) — happy
 
-> **Given** no Оригінал has been selected,
-> **When** Власник картинки opens the form,
+> **Given** no Original has been selected,
+> **When** Image owner opens the form,
 > **Then** the file-selection control remains available, transformation parameter controls are disabled or hidden and processing is disabled; selecting a non-empty file of at most 20,000,000 bytes reveals or enables the transformation controls with JPEG selected and empty dimension limits, and enables processing without waiting for content validation. Selecting an empty file or a file above that byte limit immediately shows an understandable error, omits Preview and keeps processing disabled.
 
 — `spec.md §5, AC-01, verbatim` · [Full text](../spec.md)
 
 ### AC-07 (US-03) — happy
 
-> **Given** a supported static JPEG, PNG, WebP or HEIC Оригінал,
-> **When** Власник картинки chooses JPEG, PNG or WebP and processes it,
-> **Then** a decodable Результат is produced in the chosen format; JPEG is the initial output choice for every input, including JPEG itself, and there is no guarantee of smaller file size or byte-identical output.
+> **Given** a supported static JPEG, PNG, WebP or HEIC Original,
+> **When** Image owner chooses JPEG, PNG or WebP and processes it,
+> **Then** a decodable Result is produced in the chosen format; JPEG is the initial output choice for every input, including JPEG itself, and there is no guarantee of smaller file size or byte-identical output.
 
 — `spec.md §5, AC-07, verbatim` · [Full text](../spec.md)
 
 ### AC-13 (US-04) — cross-context
 
 > **Given** successful processing for the current selection,
-> **When** the current operation's complete Результат is ready,
-> **Then** the page initiates exactly one automatic browser download without a separate download action; the file has the requested output format and matching filename extension, and the Оригінал remains untouched. After handing the file to the browser for download, the page returns to the initial form without reloading: the selected file, Preview, Результат and errors are removed, both dimension limits become empty and format resets to JPEG. File selection is available, transformation controls are disabled or hidden and processing is disabled until another eligible file is selected. No result characteristics or repeat-download action remain on the page. Reset must not interrupt the initiated download and does not wait for confirmation that the browser saved the file to disk. The next selected file starts an independent conversion, including when it is the same file as before.
+> **When** the current operation's complete Result is ready,
+> **Then** the page initiates exactly one automatic browser download without a separate download action; the file has the requested output format and matching filename extension, and the Original remains untouched. After handing the file to the browser for download, the page returns to the initial form without reloading: the selected file, Preview, Result and errors are removed, both dimension limits become empty and format resets to JPEG. File selection is available, transformation controls are disabled or hidden and processing is disabled until another eligible file is selected. No result characteristics or repeat-download action remain on the page. Reset must not interrupt the initiated download and does not wait for confirmation that the browser saved the file to disk. The next selected file starts an independent conversion, including when it is the same file as before.
 
 — `spec.md §5, AC-13, verbatim` · [Full text](../spec.md)
 
 ### AC-15 (US-05) — error
 
 > **Given** processing is in progress,
-> **When** Власник картинки waits, processing fails or the page closes,
+> **When** Image owner waits, processing fails or the page closes,
 > **Then** the form disables file selection, all transformation parameter controls and repeat submission while processing, shows a truthful busy state without fabricated percentages, restores the controls and retry with the selected file and parameters after a recoverable error, and offers no result restoration after closing or reloading the page. Successful completion initiates the automatic download and resets the form as specified in AC-13; only the current operation may initiate that download, and no stale or duplicate completion may initiate it again.
 
 — `spec.md §5, AC-15, verbatim` · [Full text](../spec.md)

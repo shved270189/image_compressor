@@ -77,7 +77,7 @@
       "layer": "docs",
       "deps": ["T6", "T7"],
       "acs": ["AC-01", "AC-09"],
-      "dod": "README.md and docs/architecture-map.md describe optional Ліміт ваги, miss versus met-limit, and the current OpenAPI path; documented build, pytest and both lint commands pass.",
+      "dod": "README.md and docs/architecture-map.md describe optional Size limit, miss versus met-limit, and the current OpenAPI path; documented build, pytest and both lint commands pass.",
       "files_hint": ["README.md", "docs/architecture-map.md"],
       "file": "docs/features/image-size-limit/tasks/document-size-limit-workflow.md"
     }

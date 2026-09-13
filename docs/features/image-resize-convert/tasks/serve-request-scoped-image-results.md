@@ -24,9 +24,9 @@ file: "docs/features/image-resize-convert/tasks/serve-request-scoped-image-resul
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** the Результат to download automatically after successful processing and the form to reset
-> **So that** I can use the completed file without overwriting the Оригінал and immediately select the next image.
+> **As an** Image owner
+> **I want** the Result to download automatically after successful processing and the form to reset
+> **So that** I can use the completed file without overwriting the Original and immediately select the next image.
 
 — `spec.md §4, US-04, verbatim` · [Full text](../spec.md)
 
@@ -94,9 +94,9 @@ No DB changes.
 
 ### AC-07 (US-03) — happy
 
-> **Given** a supported static JPEG, PNG, WebP or HEIC Оригінал,
-> **When** Власник картинки chooses JPEG, PNG or WebP and processes it,
-> **Then** a decodable Результат is produced in the chosen format; JPEG is the initial output choice for every input, including JPEG itself, and there is no guarantee of smaller file size or byte-identical output.
+> **Given** a supported static JPEG, PNG, WebP or HEIC Original,
+> **When** Image owner chooses JPEG, PNG or WebP and processes it,
+> **Then** a decodable Result is produced in the chosen format; JPEG is the initial output choice for every input, including JPEG itself, and there is no guarantee of smaller file size or byte-identical output.
 
 — `spec.md §5, AC-07, verbatim` · [Full text](../spec.md)
 
@@ -110,24 +110,24 @@ No DB changes.
 
 ### AC-12 (US-05) — error
 
-> **Given** an empty, corrupted, unsupported or animated Оригінал, or an input above 20 million bytes or 40 million decoded pixels,
+> **Given** an empty, corrupted, unsupported or animated Original, or an input above 20 million bytes or 40 million decoded pixels,
 > **When** processing is attempted,
-> **Then** the system rejects it with an understandable reason and produces no successful Результат; exact limits are allowed, support is determined from actual content, and additional HEIC images are subject to the primary-image rule rather than treated as animation. The form checks only whether the selected file is empty or exceeds the byte limit before preparing Preview; the server checks content, animation and decoded pixel count when processing is submitted, and enforces all input limits even when form restrictions are bypassed.
+> **Then** the system rejects it with an understandable reason and produces no successful Result; exact limits are allowed, support is determined from actual content, and additional HEIC images are subject to the primary-image rule rather than treated as animation. The form checks only whether the selected file is empty or exceeds the byte limit before preparing Preview; the server checks content, animation and decoded pixel count when processing is submitted, and enforces all input limits even when form restrictions are bypassed.
 
 — `spec.md §5, AC-12, verbatim` · [Full text](../spec.md)
 
 ### AC-13 (US-04) — cross-context
 
 > **Given** successful processing for the current selection,
-> **When** the current operation's complete Результат is ready,
-> **Then** the page initiates exactly one automatic browser download without a separate download action; the file has the requested output format and matching filename extension, and the Оригінал remains untouched. After handing the file to the browser for download, the page returns to the initial form without reloading: the selected file, Preview, Результат and errors are removed, both dimension limits become empty and format resets to JPEG. File selection is available, transformation controls are disabled or hidden and processing is disabled until another eligible file is selected. No result characteristics or repeat-download action remain on the page. Reset must not interrupt the initiated download and does not wait for confirmation that the browser saved the file to disk. The next selected file starts an independent conversion, including when it is the same file as before.
+> **When** the current operation's complete Result is ready,
+> **Then** the page initiates exactly one automatic browser download without a separate download action; the file has the requested output format and matching filename extension, and the Original remains untouched. After handing the file to the browser for download, the page returns to the initial form without reloading: the selected file, Preview, Result and errors are removed, both dimension limits become empty and format resets to JPEG. File selection is available, transformation controls are disabled or hidden and processing is disabled until another eligible file is selected. No result characteristics or repeat-download action remain on the page. Reset must not interrupt the initiated download and does not wait for confirmation that the browser saved the file to disk. The next selected file starts an independent conversion, including when it is the same file as before.
 
 — `spec.md §5, AC-13, verbatim` · [Full text](../spec.md)
 
 ### AC-14 (US-04) — authorization
 
-> **Given** a Результат belongs to a different operation or is no longer available to the current page,
-> **When** Власник картинки attempts to retrieve it,
+> **Given** a Result belongs to a different operation or is no longer available to the current page,
+> **When** Image owner attempts to retrieve it,
 > **Then** the application provides no history, lookup or retrieval capability for that result and discloses no image from another operation; no account or ownership-verification system is introduced.
 
 — `spec.md §5, AC-14, verbatim` · [Full text](../spec.md)
@@ -135,7 +135,7 @@ No DB changes.
 ### AC-15 (US-05) — error
 
 > **Given** processing is in progress,
-> **When** Власник картинки waits, processing fails or the page closes,
+> **When** Image owner waits, processing fails or the page closes,
 > **Then** the form disables file selection, all transformation parameter controls and repeat submission while processing, shows a truthful busy state without fabricated percentages, restores the controls and retry with the selected file and parameters after a recoverable error, and offers no result restoration after closing or reloading the page. Successful completion initiates the automatic download and resets the form as specified in AC-13; only the current operation may initiate that download, and no stale or duplicate completion may initiate it again.
 
 — `spec.md §5, AC-15, verbatim` · [Full text](../spec.md)

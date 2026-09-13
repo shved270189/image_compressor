@@ -10,7 +10,7 @@ No browser-test runner was added.
 | Desktop Chrome, 1280×800 CSS px | Same form; `scrollWidth` 1265 inside `innerWidth` 1280 | PASS; no horizontal page overflow |
 | Desktop Chrome | Keyboard focus on Size limit number and both Mb/Kb radios; `:focus-visible` outline solid | PASS |
 | Desktop Chrome | Reduced-motion stylesheet (`prefers-reduced-motion: reduce` zeros animation/transition) present; controls remain usable | PASS |
-| Desktop Chrome | Local invalid bound `0`: copy `Ліміт ваги must be a positive number with Mb or Kb or left empty`; `sample.png` and preview kept | PASS |
+| Desktop Chrome | Local invalid bound `0`: copy `Size limit must be a positive number with Mb or Kb or left empty`; `sample.png` and preview kept | PASS |
 | Desktop Chrome | Met-limit `0.5` Mb JPEG: one `result.jpg` download, form reset to empty file, empty bound, Mb, JPEG; file input focused | PASS |
 | Desktop Chrome | Miss `0.001` Kb JPEG: one further `result.jpg` download; form kept (`noisy.png`, `0.001`, Kb, JPEG, preview); notice `The result is 629 bytes. The size limit was exceeded.` with `role="status"` `aria-live="polite"` | PASS |
 | Desktop Chrome | After miss, Size limit and Process remain enabled; no fabricated percentages | PASS |

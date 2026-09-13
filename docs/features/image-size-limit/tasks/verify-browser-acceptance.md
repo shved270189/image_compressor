@@ -23,8 +23,8 @@ file: "docs/features/image-size-limit/tasks/verify-browser-acceptance.md"
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** the smallest Результат still downloaded when the Ліміт ваги cannot be met, the form kept, and the actual size plus that the bound was exceeded shown
+> **As an** Image owner
+> **I want** the smallest Result still downloaded when the Size limit cannot be met, the form kept, and the actual size plus that the bound was exceeded shown
 > **So that** I can change settings and process again; a new file starts a new cycle.
 >
 > — `spec.md §4, US-04, verbatim` · full text: [spec.md](../spec.md)
@@ -33,11 +33,11 @@ This task records the specified browser, keyboard and contrast checks on the imp
 
 ## Inlined context
 
-> Every interactive control including the Ліміт ваги number and unit is keyboard-usable with visible focus; labels, errors and the exceeded notice pass the project owner's manual readable-contrast review; reduced motion as on the existing form. Complete flow at viewport widths 360 and 1280 CSS pixels with no horizontal page overflow, including the unit choice beside the number. After an over-limit Результат, actual size and the exceeded notice remain until the next process, a new file selection or page close.
+> Every interactive control including the Size limit number and unit is keyboard-usable with visible focus; labels, errors and the exceeded notice pass the project owner's manual readable-contrast review; reduced motion as on the existing form. Complete flow at viewport widths 360 and 1280 CSS pixels with no horizontal page overflow, including the unit choice beside the number. After an over-limit Result, actual size and the exceeded notice remain until the next process, a new file selection or page close.
 >
 > — `spec.md §6, Accessibility, Responsive UI, Miss visibility, abridged` · full text: [spec.md](../spec.md)
 
-> Review the implementation against every state, including empty bound, bound-plus-JPEG-only submit, invalid bound kept original, loading lock of Ліміт ваги, miss keep-form with actual bytes, met-limit reset that also clears bound and miss facts, new-file reset to Mb, stale completion suppression and clean reload. Check the keyboard journey for number and both unit radios, visible focus, owner-approved contrast for the exceeded notice, reduced motion and no horizontal overflow at 360 and 1280 CSS pixels.
+> Review the implementation against every state, including empty bound, bound-plus-JPEG-only submit, invalid bound kept original, loading lock of Size limit, miss keep-form with actual bytes, met-limit reset that also clears bound and miss facts, new-file reset to Mb, stale completion suppression and clean reload. Check the keyboard journey for number and both unit radios, visible focus, owner-approved contrast for the exceeded notice, reduced motion and no horizontal overflow at 360 and 1280 CSS pixels.
 >
 > — `screens.md, Verification and readiness, abridged` · full text: [screens.md](../screens.md)
 
@@ -60,33 +60,33 @@ Internal — no API surface. Browser talks to the already-shipped `POST /api/v1/
 
 ### AC-02 — happy
 
-> **Given** a selected Оригінал,
-> **When** Власник картинки sets Ліміт ваги,
+> **Given** a selected Original,
+> **When** Image owner sets Size limit,
 > **Then** the control is a numeric field that accepts a positive decimal, with a unit choice to the left of the number whose options are Mb and Kb and with Mb selected initially; empty remains allowed and means no bound.
 >
 > — `spec.md §5, AC-02, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-06 — happy
 
-> **Given** a Ліміт ваги that the Результат can meet, or an empty Ліміт ваги,
+> **Given** a Size limit that the Result can meet, or an empty Size limit,
 > **When** processing completes successfully,
-> **Then** the page initiates exactly one automatic download of a Результат whose size in bytes is at most the Ліміт ваги when one was supplied, then resets the form to the initial empty state: the selected file, Preview, Результат, errors, miss facts, both dimension limits and Ліміт ваги are cleared and format returns to JPEG.
+> **Then** the page initiates exactly one automatic download of a Result whose size in bytes is at most the Size limit when one was supplied, then resets the form to the initial empty state: the selected file, Preview, Result, errors, miss facts, both dimension limits and Size limit are cleared and format returns to JPEG.
 >
 > — `spec.md §5, AC-06, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-07 — happy
 
-> **Given** a Ліміт ваги that cannot be met even at one pixel and the smallest file the chosen format can produce,
+> **Given** a Size limit that cannot be met even at one pixel and the smallest file the chosen format can produce,
 > **When** processing completes,
-> **Then** a Результат is still produced in the chosen format and one automatic download starts; the form is not reset; the page shows the actual Результат size and that the Ліміт ваги was exceeded; the Оригінал and parameters remain so the owner can change them and process again.
+> **Then** a Result is still produced in the chosen format and one automatic download starts; the form is not reset; the page shows the actual Result size and that the Size limit was exceeded; the Original and parameters remain so the owner can change them and process again.
 >
 > — `spec.md §5, AC-07, verbatim` · full text: [spec.md](../spec.md)
 
 ### AC-11 — cross-context
 
 > **Given** processing is in progress,
-> **When** Власник картинки waits, starts another process, processing fails or the page closes,
-> **Then** file selection and all transformation controls including Ліміт ваги are disabled while processing, a truthful busy state is shown without fabricated percentages, a new process replaces previous miss facts, only the current operation may initiate a download, recoverable failure restores retry with the selected file and parameters, and closing or reloading the page restores neither input nor result. After a miss, those controls remain usable so the owner can change settings and process again.
+> **When** Image owner waits, starts another process, processing fails or the page closes,
+> **Then** file selection and all transformation controls including Size limit are disabled while processing, a truthful busy state is shown without fabricated percentages, a new process replaces previous miss facts, only the current operation may initiate a download, recoverable failure restores retry with the selected file and parameters, and closing or reloading the page restores neither input nor result. After a miss, those controls remain usable so the owner can change settings and process again.
 >
 > — `spec.md §5, AC-11, verbatim` · full text: [spec.md](../spec.md)
 

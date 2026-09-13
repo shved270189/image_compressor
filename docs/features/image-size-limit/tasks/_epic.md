@@ -56,7 +56,7 @@ See [tracker.md](./tracker.md) for status. Machine contract: [tasks.json](../tas
 ## Risks / Hard rules
 
 - HTTP validation stays in `backend/main.py`; extra-shrink stays in `backend/images.py`. Native encoding must not block the event loop.
-- Ліміт ваги is not the 20,000,000-byte upload cap. Empty bound keeps today's geometry. No crop, stretch, enlarge or silent format change.
+- Size limit is not the 20,000,000-byte upload cap. Empty bound keeps today's geometry. No crop, stretch, enlarge or silent format change.
 - A miss is HTTP 200 with a file, not a client-error rejection. Custom miss headers may be stripped by a future proxy; same-origin today, `blob.size` fallback is allowed.
 - Extra-shrink search procedure is accepted debt: the implementer chooses the search as long as AC-05 holds.
 - A tight bound can hold the only screen busy with no cancel. Keep a truthful busy state without fabricated percentages.

@@ -24,9 +24,9 @@ file: "docs/features/image-resize-convert/tasks/convert-hdr-to-ordinary-sdr-outp
 
 ## Why (user story)
 
-> **As a** Власник картинки
+> **As an** Image owner
 > **I want** to choose JPEG, PNG or WebP, with JPEG initially selected
-> **So that** I receive a Результат in the desired supported format.
+> **So that** I receive a Result in the desired supported format.
 
 — `spec.md §4, US-03, verbatim` · [Full text](../spec.md)
 
@@ -91,16 +91,16 @@ Internal — no API surface.
 
 ### AC-09 (US-01, US-03) — domain invariant
 
-> **Given** an Оригінал with orientation information or service metadata,
-> **When** Власник картинки processes it,
-> **Then** the Результат and any available Preview have the correct visible orientation, and dimension limits apply to that orientation; the Результат omits GPS, camera and textual metadata while retaining information required for correct color interpretation.
+> **Given** an Original with orientation information or service metadata,
+> **When** Image owner processes it,
+> **Then** the Result and any available Preview have the correct visible orientation, and dimension limits apply to that orientation; the Result omits GPS, camera and textual metadata while retaining information required for correct color interpretation.
 
 — `spec.md §5, AC-09, verbatim` · [Full text](../spec.md)
 
 ### AC-10 (US-01, US-03) — happy
 
-> **Given** a HEIC Оригінал with additional images or high-dynamic-range content,
-> **When** Власник картинки processes it,
+> **Given** a HEIC Original with additional images or high-dynamic-range content,
+> **When** Image owner processes it,
 > **Then** only the designated primary static image is used; the form explains the general HEIC rules before submission: extra images are omitted and high-dynamic-range content becomes ordinary 8-bit output, with no promise of retaining the original high-dynamic-range appearance; this notice requires no advance server inspection.
 
 — `spec.md §5, AC-10, verbatim` · [Full text](../spec.md)

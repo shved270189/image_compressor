@@ -24,9 +24,9 @@ file: "docs/features/image-resize-convert/tasks/resize-and-normalize-output.md"
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** to set either or both Максимальні розміри independently
-> **So that** the Результат fits my bounds without cropping, distortion or enlargement.
+> **As an** Image owner
+> **I want** to set either or both Maximum dimensions independently
+> **So that** the Result fits my bounds without cropping, distortion or enlargement.
 
 — `spec.md §4, US-02, verbatim` · [Full text](../spec.md)
 
@@ -76,49 +76,49 @@ Internal — no API surface.
 
 ### AC-04 (US-02) — happy
 
-> **Given** a correctly oriented Оригінал measuring 2400 by 1200 pixels,
-> **When** Власник картинки sets only maximum width to 1200,
-> **Then** the Результат measures 1200 by 600 pixels; a height-only limit of 300 yields 600 by 300; both width 1200 and height 300 yield 600 by 300.
+> **Given** a correctly oriented Original measuring 2400 by 1200 pixels,
+> **When** Image owner sets only maximum width to 1200,
+> **Then** the Result measures 1200 by 600 pixels; a height-only limit of 300 yields 600 by 300; both width 1200 and height 300 yield 600 by 300.
 
 — `spec.md §5, AC-04, verbatim` · [Full text](../spec.md)
 
 ### AC-05 (US-02) — domain invariant
 
-> **Given** supplied Максимальні розміри,
-> **When** Власник картинки processes the Оригінал,
-> **Then** the Результат uses the largest proportional scale that fits all supplied bounds without enlarging the oriented original, with no additional reduction. Each scaled dimension is rounded to the nearest whole pixel, with exact half-pixel values rounded up and a minimum of one pixel. The Результат does not exceed either supplied bound or either original oriented dimension, contains the whole image and preserves aspect ratio subject only to this whole-pixel rounding and minimum. An oriented original of 1000 by 333 pixels with maximum width 500 produces a result of 500 by 167 pixels.
+> **Given** supplied Maximum dimensions,
+> **When** Image owner processes the Original,
+> **Then** the Result uses the largest proportional scale that fits all supplied bounds without enlarging the oriented original, with no additional reduction. Each scaled dimension is rounded to the nearest whole pixel, with exact half-pixel values rounded up and a minimum of one pixel. The Result does not exceed either supplied bound or either original oriented dimension, contains the whole image and preserves aspect ratio subject only to this whole-pixel rounding and minimum. An oriented original of 1000 by 333 pixels with maximum width 500 produces a result of 500 by 167 pixels.
 
 — `spec.md §5, AC-05, verbatim` · [Full text](../spec.md)
 
 ### AC-06 (US-02, US-03) — happy
 
-> **Given** an Оригінал measuring 800 by 600 pixels,
-> **When** Власник картинки supplies maximum width 1600 or selects the same output format as the original,
-> **Then** processing remains allowed because a parameter is supplied; an ineffective dimension limit leaves dimensions unchanged, and a same-format operation still produces the agreed normalized Результат.
+> **Given** an Original measuring 800 by 600 pixels,
+> **When** Image owner supplies maximum width 1600 or selects the same output format as the original,
+> **Then** processing remains allowed because a parameter is supplied; an ineffective dimension limit leaves dimensions unchanged, and a same-format operation still produces the agreed normalized Result.
 
 — `spec.md §5, AC-06, verbatim` · [Full text](../spec.md)
 
 ### AC-07 (US-03) — happy
 
-> **Given** a supported static JPEG, PNG, WebP or HEIC Оригінал,
-> **When** Власник картинки chooses JPEG, PNG or WebP and processes it,
-> **Then** a decodable Результат is produced in the chosen format; JPEG is the initial output choice for every input, including JPEG itself, and there is no guarantee of smaller file size or byte-identical output.
+> **Given** a supported static JPEG, PNG, WebP or HEIC Original,
+> **When** Image owner chooses JPEG, PNG or WebP and processes it,
+> **Then** a decodable Result is produced in the chosen format; JPEG is the initial output choice for every input, including JPEG itself, and there is no guarantee of smaller file size or byte-identical output.
 
 — `spec.md §5, AC-07, verbatim` · [Full text](../spec.md)
 
 ### AC-08 (US-03) — domain invariant
 
-> **Given** a selected Оригінал, whether or not its transparency is known or Preview is available,
-> **When** Власник картинки chooses JPEG,
-> **Then** the form always shows a conditional warning before processing: if the image has transparency, it will become white; this also applies when JPEG is selected by default and requires no advance transparency detection. The JPEG Результат uses white behind partial and full transparency; PNG and WebP output retain transparency.
+> **Given** a selected Original, whether or not its transparency is known or Preview is available,
+> **When** Image owner chooses JPEG,
+> **Then** the form always shows a conditional warning before processing: if the image has transparency, it will become white; this also applies when JPEG is selected by default and requires no advance transparency detection. The JPEG Result uses white behind partial and full transparency; PNG and WebP output retain transparency.
 
 — `spec.md §5, AC-08, verbatim` · [Full text](../spec.md)
 
 ### AC-09 (US-01, US-03) — domain invariant
 
-> **Given** an Оригінал with orientation information or service metadata,
-> **When** Власник картинки processes it,
-> **Then** the Результат and any available Preview have the correct visible orientation, and dimension limits apply to that orientation; the Результат omits GPS, camera and textual metadata while retaining information required for correct color interpretation.
+> **Given** an Original with orientation information or service metadata,
+> **When** Image owner processes it,
+> **Then** the Result and any available Preview have the correct visible orientation, and dimension limits apply to that orientation; the Result omits GPS, camera and textual metadata while retaining information required for correct color interpretation.
 
 — `spec.md §5, AC-09, verbatim` · [Full text](../spec.md)
 

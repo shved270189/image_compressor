@@ -18,7 +18,7 @@ architecture. `medium` denotes an explicit non-persistent product field;
 `high` denotes a directly verified framework shape or specified wire convention.
 No field has a sequence-only, low-confidence origin. English schema identifiers
 follow the owner's identifier rule; `Original`, `Result` and `MaximumDimension`
-map to the glossary's Оригінал, Результат and Максимальні розміри respectively.
+map to the glossary's Original, Result and Maximum dimensions respectively.
 
 | Schema path | Origin | Confidence |
 |---|---|---|

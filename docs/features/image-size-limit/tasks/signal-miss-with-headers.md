@@ -23,14 +23,14 @@ file: "docs/features/image-size-limit/tasks/signal-miss-with-headers.md"
 
 ## Why (user story)
 
-> **As a** Власник картинки
-> **I want** a Результат that meets the Ліміт ваги, or processing with an empty Ліміт ваги, to download automatically and the form to reset
+> **As an** Image owner
+> **I want** a Result that meets the Size limit, or processing with an empty Size limit, to download automatically and the form to reset
 > **So that** success stays the same as today's flow and no result characteristics remain on the page.
 >
 > — `spec.md §4, US-03, verbatim` · full text: [spec.md](../spec.md)
 
-> **As a** Власник картинки
-> **I want** the smallest Результат still downloaded when the Ліміт ваги cannot be met, the form kept, and the actual size plus that the bound was exceeded shown
+> **As an** Image owner
+> **I want** the smallest Result still downloaded when the Size limit cannot be met, the form kept, and the actual size plus that the bound was exceeded shown
 > **So that** I can change settings and process again; a new file starts a new cycle.
 >
 > — `spec.md §4, US-04, verbatim` · full text: [spec.md](../spec.md)
@@ -39,7 +39,7 @@ This task puts miss versus met-limit on the existing binary 200 so the UI can re
 
 ## Inlined context
 
-> Keep the complete binary Результат and attachment filename. When a bound was supplied, also send miss facts on the response so the Browser UI can start one download and then either reset (met) or keep the form (miss). Do not use a client-error status for an unattainable bound. Do not wrap the file in JSON or multipart metadata.
+> Keep the complete binary Result and attachment filename. When a bound was supplied, also send miss facts on the response so the Browser UI can start one download and then either reset (met) or keep the form (miss). Do not use a client-error status for an unattainable bound. Do not wrap the file in JSON or multipart metadata.
 >
 > — `sad.md §4, Signal a miss on the binary response, abridged` · full text: [sad.md](../sad.md)
 
@@ -47,13 +47,13 @@ This task puts miss versus met-limit on the existing binary 200 so the UI can re
 >
 > — `sad.md §8, Miss facts, verbatim` · full text: [sad.md](../sad.md)
 
-> **Chosen:** Option 2. The successful response remains the complete binary Результат. Miss versus met-limit is carried in headers so the Browser UI can start one download and then reset or keep the form.
+> **Chosen:** Option 2. The successful response remains the complete binary Result. Miss versus met-limit is carried in headers so the Browser UI can start one download and then reset or keep the form.
 >
 > — `adr/0002-signal-size-limit-miss-with-headers.md, Decision outcome, abridged` · full text: [adr/0002-signal-size-limit-miss-with-headers.md](../adr/0002-signal-size-limit-miss-with-headers.md)
 
-> Bound omitted: complete binary Результат, then clean form. Bound supplied and encoded bytes meet it: complete binary with met-limit facts, then clean form. Bound supplied and even one pixel exceeds it: complete binary with miss facts; keep form, show actual size and exceeded notice. Recoverable failure: restore controls with current file and parameters.
+> Bound omitted: complete binary Result, then clean form. Bound supplied and encoded bytes meet it: complete binary with met-limit facts, then clean form. Bound supplied and even one pixel exceeds it: complete binary with miss facts; keep form, show actual size and exceeded notice. Recoverable failure: restore controls with current file and parameters.
 >
-> — `sad.md §6, process with optional Ліміт ваги, abridged` · full text: [sad.md](../sad.md)
+> — `sad.md §6, process with optional Size limit, abridged` · full text: [sad.md](../sad.md)
 
 > **Hard rule:** A miss is not a client error: AC-07 requires a file. Keep the existing binary attachment handoff.
 >
@@ -79,9 +79,9 @@ No DB changes.
 
 ### AC-06 — happy
 
-> **Given** a Ліміт ваги that the Результат can meet, or an empty Ліміт ваги,
+> **Given** a Size limit that the Result can meet, or an empty Size limit,
 > **When** processing completes successfully,
-> **Then** the page initiates exactly one automatic download of a Результат whose size in bytes is at most the Ліміт ваги when one was supplied, then resets the form to the initial empty state: the selected file, Preview, Результат, errors, miss facts, both dimension limits and Ліміт ваги are cleared and format returns to JPEG.
+> **Then** the page initiates exactly one automatic download of a Result whose size in bytes is at most the Size limit when one was supplied, then resets the form to the initial empty state: the selected file, Preview, Result, errors, miss facts, both dimension limits and Size limit are cleared and format returns to JPEG.
 >
 > — `spec.md §5, AC-06, verbatim` · full text: [spec.md](../spec.md)
 
@@ -89,9 +89,9 @@ This task owns the server facts for omitted/met 200. T5 owns the download and re
 
 ### AC-07 — happy
 
-> **Given** a Ліміт ваги that cannot be met even at one pixel and the smallest file the chosen format can produce,
+> **Given** a Size limit that cannot be met even at one pixel and the smallest file the chosen format can produce,
 > **When** processing completes,
-> **Then** a Результат is still produced in the chosen format and one automatic download starts; the form is not reset; the page shows the actual Результат size and that the Ліміт ваги was exceeded; the Оригінал and parameters remain so the owner can change them and process again.
+> **Then** a Result is still produced in the chosen format and one automatic download starts; the form is not reset; the page shows the actual Result size and that the Size limit was exceeded; the Original and parameters remain so the owner can change them and process again.
 >
 > — `spec.md §5, AC-07, verbatim` · full text: [spec.md](../spec.md)
 

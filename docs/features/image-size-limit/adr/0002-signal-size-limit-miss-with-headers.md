@@ -15,13 +15,13 @@ ticket: "N/A"
 
 ## Context
 
-`POST /api/v1/images/process` currently returns only the binary Результат and a Content-Disposition filename. A miss still downloads that file, keeps the form, and must show the actual size plus that Ліміт ваги was exceeded. A met or omitted bound must keep today's automatic download and clean form. The Browser UI and Application both need a shared miss contract.
+`POST /api/v1/images/process` currently returns only the binary Result and a Content-Disposition filename. A miss still downloads that file, keeps the form, and must show the actual size plus that Size limit was exceeded. A met or omitted bound must keep today's automatic download and clean form. The Browser UI and Application both need a shared miss contract.
 
 ## Decision drivers
 
 - Miss is not a client error: AC-07 requires a file.
 - Keep the existing binary attachment handoff used by the smoke test and browser download.
-- Server owns Ліміт ваги arithmetic (1 Mb = 1,000,000 bytes; 1 Kb = 1,000 bytes) so the UI does not become a second source of truth.
+- Server owns Size limit arithmetic (1 Mb = 1,000,000 bytes; 1 Kb = 1,000 bytes) so the UI does not become a second source of truth.
 
 ## Considered options
 
@@ -31,7 +31,7 @@ ticket: "N/A"
 
 ## Decision outcome
 
-**Chosen:** Option 2. The successful response remains the complete binary Результат. Miss versus met-limit is carried in headers so the Browser UI can start one download and then reset or keep the form. Optional request fields `size_limit` and `size_unit` carry the bound; the Application converts them to whole bytes.
+**Chosen:** Option 2. The successful response remains the complete binary Result. Miss versus met-limit is carried in headers so the Browser UI can start one download and then reset or keep the form. Optional request fields `size_limit` and `size_unit` carry the bound; the Application converts them to whole bytes.
 
 ## Consequences
 

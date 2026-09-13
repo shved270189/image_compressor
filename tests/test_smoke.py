@@ -14,7 +14,7 @@ HEIC_NOTICE = (
     "HDR becomes ordinary 8-bit output and may not retain its original appearance."
 )
 SIZE_LIMIT_ERROR = (
-    "Ліміт ваги must be a positive number with Mb or Kb or left empty"
+    "Size limit must be a positive number with Mb or Kb or left empty"
 )
 SIZE_LIMIT_HELP = "Leave empty for no result size bound."
 
