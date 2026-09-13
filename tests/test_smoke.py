@@ -30,10 +30,14 @@ def test_size_limit_form_copy():
     assert SIZE_LIMIT_ERROR in source
     assert SIZE_LIMIT_HELP in source
     assert 'id="size-limit-help"' in source
-    assert 'type="radio"' in source
+    assert 'id="size-unit"' in source
+    assert 'aria-label="Size unit"' in source
+    assert '<option value="mb">Mb</option>' in source
+    assert '<option value="kb">Kb</option>' in source
+    assert 'type="radio"' not in source
     number = source.index('id="size-limit"')
-    assert source.index('value="mb"') < number
-    assert source.index('value="kb"') < number
+    unit = source.index('id="size-unit"')
+    assert number < unit
     assert 'aria-describedby="size-limit-help file-error"' in source
 
 

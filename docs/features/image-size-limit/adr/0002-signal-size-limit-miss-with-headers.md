@@ -21,7 +21,7 @@ ticket: "N/A"
 
 - Miss is not a client error: AC-07 requires a file.
 - Keep the existing binary attachment handoff used by the smoke test and browser download.
-- Server owns Ліміт ваги arithmetic (1 Mb = 1,048,576 bytes; 1 Kb = 1,024 bytes) so the UI does not become a second source of truth.
+- Server owns Ліміт ваги arithmetic (1 Mb = 1,000,000 bytes; 1 Kb = 1,000 bytes) so the UI does not become a second source of truth.
 
 ## Considered options
 

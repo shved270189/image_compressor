@@ -71,11 +71,11 @@ def handles(monkeypatch):
         ([("max_width", "9" * 1024)], (int("9" * 1024), None, "jpeg", None)),
         ([("size_limit", ""), ("max_width", "1200")], (1200, None, "jpeg", None)),
         ([("size_limit", ""), ("size_unit", "kb"), ("output_format", "png")], (None, None, "png", None)),
-        ([("size_limit", "0.5"), ("size_unit", "mb")], (None, None, "jpeg", 524_288)),
-        ([("size_limit", "200"), ("size_unit", "kb")], (None, None, "jpeg", 204_800)),
+        ([("size_limit", "0.5"), ("size_unit", "mb")], (None, None, "jpeg", 500_000)),
+        ([("size_limit", "200"), ("size_unit", "kb")], (None, None, "jpeg", 200_000)),
         (
             [("size_limit", "0.5"), ("size_unit", "mb"), ("max_width", "1200")],
-            (1200, None, "jpeg", 524_288),
+            (1200, None, "jpeg", 500_000),
         ),
     ],
 )
@@ -298,7 +298,7 @@ def test_met_size_limit_sends_true_headers(handles):
         assert response.status_code == 200
         assert response.headers["x-size-limit-met"] == "true"
         assert int(response.headers["x-result-bytes"]) == len(response.content)
-        assert len(response.content) <= 524_288
+        assert len(response.content) <= 500_000
 
     asyncio.run(check())
 
@@ -345,7 +345,7 @@ def test_size_limit_only_jpeg_is_enough_to_process(handles):
         assert response.headers["content-type"] == "image/jpeg"
         with Image.open(io.BytesIO(response.content)) as image:
             assert image.format == "JPEG"
-            assert len(response.content) <= 524_288
+            assert len(response.content) <= 500_000
 
     asyncio.run(check())
 

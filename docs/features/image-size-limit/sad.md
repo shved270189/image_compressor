@@ -17,7 +17,7 @@ target_surfaces: [backend-service, web-frontend]
 
 **Top-3 quality goals (1-liners; full scenarios in §10):**
 
-1. Bound arithmetic: 1 Mb = 1,048,576 bytes and 1 Kb = 1,024 bytes, compared after encoding in whole bytes.
+1. Bound arithmetic: 1 Mb = 1,000,000 bytes and 1 Kb = 1,000 bytes, compared after encoding in whole bytes.
 2. Miss visibility: after an over-limit Результат, actual size and the exceeded notice remain until the next process, a new file selection or page close.
 3. Accessible Ліміт ваги: keyboard-usable number and unit, visible focus, and a complete flow at 360 and 1280 CSS pixels with no horizontal page overflow.
 
@@ -147,7 +147,195 @@ sequenceDiagram
     App->>App: Release remaining owned operation resources
 ```
 
-`sdd:sequences` expands this seed to every spec §5 acceptance criterion.
+The seed above stays as the collapsed overview from design. The five flows below expand it to every spec §4 user story and §5 acceptance criterion. Participants are generic (`<user>`, `<ui>`, `<service>`). There is no `<data-store>`: §5 declared none, and no flow persists an entity.
+
+### Set optional Ліміт ваги
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+
+    Note over U,UI: Precondition: Оригінал selected on SCR-01, JPEG default, empty Ліміт ваги
+    UI-->>U: Offer Ліміт ваги number with unit Mb or Kb, Mb selected initially
+    U->>UI: Leave empty or enter a positive decimal
+    alt Bound empty
+        UI-->>U: Apply no result byte bound, keep existing dimension and format rules
+        U->>UI: Submit processing
+        UI->>UI: Lock file selection and transformation controls including Ліміт ваги
+        Note over U,UI: Continues on SCR-01 through US-02 then US-03
+    else Bound is a positive number
+        UI-->>U: Accept bound as a transformation parameter, including JPEG only and no maxima
+        U->>UI: Submit processing
+        UI->>S: Request processing with bound and chosen format
+        S-->>UI: Accept, a transformation parameter is supplied
+        UI->>UI: Lock file selection and transformation controls including Ліміт ваги
+        Note over U,S: Continues on SCR-01 through US-02 then US-03 or US-04
+    else Bound is zero, negative, or not a positive number
+        UI-->>U: Reject through US-05, keep Оригінал
+    else User selects another file
+        UI->>UI: Reset bound, unit to Mb, JPEG and miss facts
+        UI-->>U: Show initial form with the new Оригінал
+    end
+    Note over U,UI: Postcondition: empty means no bound, a supplied positive bound is enough to process, invalid values never start processing
+```
+
+### Shrink below dimension ceiling
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+
+    Note over U,S: Precondition: current operation in progress on SCR-01, controls locked, Оригінал plus optional maxima, bound and format already submitted
+    UI->>S: Process Оригінал with optional maxima, bound and chosen format
+    alt Bound omitted
+        S->>S: Fit largest proportional scale to supplied maxima, no extra shrink
+        Note over S: Oriented 2400 by 1200 with only max width 1200 yields 1200 by 600
+        S-->>UI: Return encoded Результат
+        Note over U,UI: Continues on SCR-01 through US-03
+    else Bound supplied and encoded bytes meet it
+        Note over S: Bound bytes equal entered number times 1000000 for Mb or 1000 for Kb. 0.5 Mb equals 500000 bytes
+        S->>S: Encode in the chosen format and compare whole result bytes to the bound
+        S->>S: Reduce proportionally and encoding quality only while the file is larger than the bound
+        S->>S: Stop at the largest proportional size and highest quality that already meets the bound
+        Note over S: Never exceed maxima or original, never enlarge, crop, stretch, or change format. Halves round up, minimum one pixel
+        S-->>UI: Return encoded Результат that meets the bound
+        Note over U,UI: Continues on SCR-01 through US-03
+    else Bound supplied and even one pixel exceeds it
+        S->>S: Encode the smallest file of the chosen format
+        S-->>UI: Return encoded Результат that still exceeds the bound
+        Note over U,UI: Continues on SCR-01 through US-04, not a rejection without a file
+    end
+    Note over U,S: Postcondition: Результат never exceeds maxima or original, keeps the chosen format, extra shrink only while over the bound
+```
+
+### Download when within limit
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+
+    Note over U,S: Precondition: processing completed on SCR-01 after US-02
+    S-->>UI: Deliver encoded Результат and whether the bound was omitted or met
+    alt Completion is not the current operation
+        UI->>UI: Ignore stale completion
+        UI-->>U: No download and no form change
+    else Bound omitted or encoded bytes at most the bound
+        UI->>UI: Initiate exactly one automatic download
+        UI-->>U: Browser starts the download
+        UI->>UI: After handoff clear file, Preview, result, errors, miss facts, maxima and Ліміт ваги, reset JPEG
+        UI-->>U: Show the initial empty form
+    else Bound supplied and encoded bytes exceed it
+        Note over U,UI: Continues on SCR-01 through US-04
+    end
+    opt User closes or reloads
+        UI-->>U: Restore neither input nor result
+        Note over U,UI: No history, lookup or retrieval exists for this or another result
+    end
+    Note over U,UI: Postcondition: a met or omitted bound leaves a clean form with no result characteristics
+```
+
+### Retry after a miss
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+
+    Note over U,S: Precondition: processing in progress on SCR-01, file selection and all transformation controls including Ліміт ваги locked, truthful busy state, no cancel
+    S-->>UI: Deliver smallest chosen-format Результат that still exceeds the bound
+    Note over S: Release remaining owned operation resources. Nothing is persisted
+    alt Completion is not the current operation
+        UI->>UI: Ignore stale completion
+        UI-->>U: No download and no miss facts from the old operation
+    else Bound is met
+        Note over U,UI: Continues on SCR-01 through US-03
+    else Bound still exceeded
+        UI->>UI: Initiate exactly one automatic download
+        UI-->>U: Browser starts the download
+        UI-->>U: Keep the form, show actual Результат size and that Ліміт ваги was exceeded
+        UI-->>U: Unlock controls with Оригінал and parameters still present
+    else Recoverable failure
+        S-->>UI: Explain processing failure
+        UI-->>U: Restore retry with the current file and parameters
+    end
+    alt User changes settings and processes again
+        UI->>UI: Replace previous miss facts
+        UI->>UI: Lock controls and mark a new current operation
+        Note over U,UI: Continues on SCR-01 through US-02
+    else User selects a new file
+        UI->>UI: Reset Preview, miss facts, errors, maxima, format and Ліміт ваги
+        UI-->>U: Show initial form with the new Оригінал
+    else User closes or reloads
+        UI-->>U: Restore neither input nor result
+    end
+    Note over U,UI: Postcondition: after a miss the owner can change settings and process again. A new file starts a new cycle. Nothing is stored for later retrieval
+```
+
+### Correct an invalid Ліміт ваги
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+
+    Note over U,S: Precondition: Оригінал selected on SCR-01, Ліміт ваги filled
+    U->>UI: Attempt processing with the filled bound
+    UI->>S: Request processing with bound and unit
+    alt Bound is zero, negative, or not a positive number
+        S-->>UI: Reject, bound must be a positive number with Mb or Kb or left empty
+        UI-->>U: Show the reason, produce no Результат, keep Оригінал
+        U->>UI: Correct or clear Ліміт ваги
+        Note over U,UI: Continues on SCR-01 through US-01
+    else Bound is empty or a positive number with Mb or Kb
+        Note over U,S: Continues on SCR-01 through US-01 submit
+    end
+    Note over U,UI: Postcondition: invalid bound never produces a Результат. Оригінал remains so the owner can fix the field without choosing a new file
+```
+
+### Coverage
+
+| User story | Flow |
+|---|---|
+| US-01 Set optional Ліміт ваги | Set optional Ліміт ваги |
+| US-02 Shrink below dimension ceiling | Shrink below dimension ceiling |
+| US-03 Download when within limit | Download when within limit |
+| US-04 Retry after a miss | Retry after a miss |
+| US-05 Correct an invalid Ліміт ваги | Correct an invalid Ліміт ваги |
+
+| AC | Shown by |
+|---|---|
+| AC-01 | Set optional Ліміт ваги — `alt` Bound empty |
+| AC-02 | Set optional Ліміт ваги — happy path, Mb or Kb with Mb initially selected |
+| AC-03 | Set optional Ліміт ваги — `else` Bound is a positive number, JPEG only accepted |
+| AC-04 | Shrink below dimension ceiling — `alt` Bound omitted, 2400 by 1200 with max width 1200 yields 1200 by 600 |
+| AC-05 | Shrink below dimension ceiling — extra-shrink happy path and `else` one-pixel miss continues through US-04 |
+| AC-06 | Download when within limit — one automatic download then clean form |
+| AC-07 | Retry after a miss — download smallest file, keep form, show actual size and exceeded notice |
+| AC-08 | Correct an invalid Ліміт ваги — reject, no Результат, Оригінал kept |
+| AC-09 | Non-runtime N/A: no history, lookup or retrieve participant or step. Stated as a note on Download when within limit close/reload |
+| AC-10 | Set optional Ліміт ваги and Retry after a miss — `alt` User selects another file |
+| AC-11 | Retry after a miss — lock/busy precondition, stale ignore, failure restore, close/reload. Download when within limit — stale ignore |
+| AC-12 | Shrink below dimension ceiling — bound-bytes note (1 Mb = 1000000, 1 Kb = 1000, 0.5 Mb = 500000) |
+
+### Runtime flags
+
+- No flow uses `<data-store>`, `<message-bus>` or `<external-system>`. §5 declared none. Nothing is persisted. `data-model` is N/A: no new entity, column or index.
+- All five flows are synchronous. No idempotency key, retry or dead-letter branch is required.
+- The design-stage seed diagram above is unchanged.
+- No new ADR. Miss headers and extra-shrink rules stay in [ADR 0002](./adr/0002-signal-size-limit-miss-with-headers.md) and §4.
 
 ## 7. Deployment view
 
@@ -166,7 +354,7 @@ Same multi-stage Docker image and Uvicorn process as the shipped foundation. No 
 | Internationalisation | N/A, single language | — |
 | Observability | Stdout/stderr only; no latency KPI | spec §6 |
 | Events | N/A — synchronous in-process call | §4, §5 |
-| Bound transport | Optional multipart fields `size_limit` (positive decimal) and `size_unit` (`mb` or `kb`); empty omits the bound; server converts with 1 Mb = 1,048,576 and 1 Kb = 1,024 | This section, ADR 0002 |
+| Bound transport | Optional multipart fields `size_limit` (positive decimal) and `size_unit` (`mb` or `kb`); empty omits the bound; server converts with 1 Mb = 1,000,000 and 1 Kb = 1,000 | This section, ADR 0002 |
 | Miss facts | When a bound was supplied, response headers `X-Result-Bytes` (whole encoded bytes) and `X-Size-Limit-Met` (`true` or `false`); omit both when the bound is omitted | This section, ADR 0002 |
 | Current operation | One AbortController; stale completions never download or restore miss facts | Existing Browser UI, spec AC-10 and AC-11 |
 
@@ -185,7 +373,7 @@ Each top-3 goal from §1 expanded into a full scenario. Numbers are from spec §
 
 **QG-1. Bound arithmetic**
 - **When:** Власник картинки supplies Ліміт ваги and processing encodes a Результат
-- **Then:** the bound in bytes equals the entered number multiplied by 1,048,576 for Mb or by 1,024 for Kb; comparison uses whole bytes of the encoded Результат; 0.5 Mb equals 524,288 bytes; 200 Kb equals 204,800 bytes
+- **Then:** the bound in bytes equals the entered number multiplied by 1,000,000 for Mb or by 1,000 for Kb; comparison uses whole bytes of the encoded Результат; 0.5 Mb equals 500,000 bytes; 200 Kb equals 200,000 bytes
 - **How verify:** fixture tests for those two conversions and whole-byte comparison after encoding
 
 **QG-2. Miss visibility**
@@ -205,7 +393,6 @@ Preserve existing input limits (at most 20,000,000 bytes and 40,000,000 decoded 
 | Risk / debt | Severity | Mitigation | Owner |
 |---|---|---|---|
 | A tight bound on a large original can hold the only screen in a busy state with no cancel | Medium | Keep a truthful busy state without fabricated percentages; cancel remains a non-goal | Project owner |
-| Mb/Kb labels with binary multipliers can be read as decimal megabytes used by mail hosts | Low | Keep the labels Mb and Kb; pin 0.5 Mb = 524,288 bytes and 200 Kb = 204,800 bytes in tests | Tech Lead |
 | A one-pixel or lowest-quality file that still meets the bound follows the success reset and can be used as if it were a useful result | Low | Specified success path; no extra warning this increment | Project owner |
 | A future reverse proxy may strip custom miss headers | Low | Same-origin today; if headers are missing, compare `blob.size` to the bound | Tech Lead |
 
@@ -217,7 +404,7 @@ Preserve existing input limits (at most 20,000,000 bytes and 40,000,000 decoded 
 | Term | Meaning |
 |---|---|
 | Власник картинки | The person processing their selected image. NOT an application account or permission role. |
-| Ліміт ваги | Independently optional upper bound on Результат file size, entered as a positive float with unit Mb (default) or Kb (1 Mb = 1,048,576 bytes, 1 Kb = 1,024 bytes). NOT the 20,000,000-byte upload cap on Оригінал. |
+| Ліміт ваги | Independently optional upper bound on Результат file size, entered as a positive float with unit Mb (default) or Kb (1 Mb = 1,000,000 bytes, 1 Kb = 1,000 bytes). NOT the 20,000,000-byte upload cap on Оригінал. |
 | Максимальні розміри | Independently optional upper width and height bounds in pixels. NOT exact dimensions, cropping or stretching. |
 | Оригінал | The image file selected for the current operation. NOT a file overwritten by processing. |
 | Preview | An optional frontend-only representation of the selected original above the form when the browser can display it. NOT the processed result or a server-generated image. |

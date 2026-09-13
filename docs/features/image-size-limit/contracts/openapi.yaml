@@ -1,0 +1,480 @@
+openapi: 3.1.0
+info:
+  title: Image size-limit API
+  version: 0.1.0
+  description: |
+    Honour an independently optional result file-size budget on the existing
+    single-image process call. When the bound is attainable, return the largest
+    proportional result that still fits. When it is not, still return the
+    smallest chosen-format file and signal the miss so the owner can retry.
+    Empty Ліміт ваги preserves today's geometry. Selection and optional Preview
+    remain local browser actions and never upload a file by themselves.
+
+    This contract extends the shipped `POST /api/v1/images/process` surface.
+    Fields are derived from the live request parser, the image-resize-convert
+    contract, spec.md and sad.md section 6. There is no schema change and no
+    data-model.md; request-scoped originals and results are not stored.
+    Errors retain standard FastAPI detail envelopes under foundation ADR 0002.
+    Miss versus met-limit is carried in response headers per feature ADR 0002.
+    There are no accounts, saved results, result IDs, lookup endpoints or events.
+servers:
+  - url: /
+    description: Same-origin application; development uses the existing Vite API proxy.
+security: []
+tags:
+  - name: Images
+    description: Request-scoped processing of one original into one result.
+paths:
+  /api/v1/images/process:
+    post:
+      tags: [Images]
+      operationId: processImage
+      summary: Process one image with optional dimensions, format and size limit
+      security: []
+      description: |
+        Submit one file and at least one transformation parameter. A supplied
+        size_limit counts as a transformation parameter, including with omitted
+        maxima and omitted output_format (JPEG fallback). The browser sends
+        output_format=jpeg by default; the server does not count an omitted
+        format's fallback as a supplied parameter. Empty dimension parts and an
+        empty size_limit impose no bound and do not count as supplied
+        parameters. Valid dimensions or a valid size_limit with omitted
+        output_format produce JPEG. An explicitly empty or unsupported
+        output_format is invalid.
+
+        Detect static JPEG, PNG, WebP or HEIC from actual content, independently
+        of the filename or declared media type. Accept at most 20,000,000 file
+        bytes and 40,000,000 decoded pixels, including equality. The byte limit
+        applies to the file, not the multipart envelope, and is not Ліміт ваги.
+        Bound multipart parsing to 20,065,536 total body bytes, 16,384 cumulative
+        multipart header-name and header-value bytes, and 1,024 bytes per text
+        field (413 on excess). Accept one file part named file and at most the
+        five named text fields max_width, max_height, output_format, size_limit
+        and size_unit; reject duplicate, unexpected or incorrectly typed parts
+        with 422. Require a non-empty multipart boundary of at most 70 bytes and
+        a closing boundary; malformed or incomplete multipart returns 400.
+        Dimension text is empty or ASCII decimal digits representing a positive
+        integer. size_limit text is empty or a positive decimal. Those transport
+        length limits are not numeric maxima.
+
+        Inspect content, animation and selected-image dimensions before
+        expensive decoding; preserve decoder safety protections and recheck
+        dimensions if decoding can change them. Reject empty, corrupted,
+        unsupported and animated input. For HEIC, select the designated primary
+        static image, even when it is not first, and omit extra images without
+        treating a static collection as animation. Produce ordinary 8-bit output
+        from HDR without promising the original HDR appearance.
+
+        Normalize visible orientation once before calculating dimensions. Never
+        crop, stretch, enlarge, exceed a supplied dimension bound or either
+        original oriented dimension, or change the chosen format. Round each
+        scaled dimension to the nearest whole pixel, with halves up and a
+        minimum of one pixel.
+
+        When size_limit is omitted or empty, use the largest proportional scale
+        no greater than one that fits every supplied dimension bound, with no
+        extra reduction. Thus an oriented 2400x1200 with only width 1200 becomes
+        1200x600. After that geometry, reject results with either side above
+        16,383 pixels for WebP or 65,500 pixels for JPEG with 422. Equality is
+        allowed. Explain that maximum width/height must be reduced; do not
+        silently perform additional reduction for encoder limits.
+
+        When size_limit is a positive number, convert it to whole bytes as
+        number × 1,000,000 for mb or number × 1,000 for kb, then compare whole
+        encoded result bytes with that bound. 0.5 mb equals 500,000 bytes;
+        200 kb equals 200,000 bytes. size_unit is required and must be mb or kb.
+        Extra reduction of pixels and encoding quality happens only while the
+        encoded file is larger than the bound, and stops at the largest
+        proportional size and highest encoding quality the chosen format allows
+        that already meets the bound. An oriented 2400x1200 with width 1200 and
+        a bound smaller than the 1200x600 encoding yields width under 1200 with
+        aspect ratio 2:1 subject to rounding. If even one pixel and the smallest
+        file of the chosen format still exceed the bound, that is a miss: still
+        return that file as 200, not a client-error rejection without a file.
+
+        Zero, negative or non-numeric size_limit is 422; produce no result.
+        Invalid size_unit, or a positive size_limit without size_unit, is 422.
+        size_unit without a positive size_limit is ignored and is not a
+        transformation parameter.
+
+        Composite partial and full transparency onto white for JPEG; retain
+        transparency for PNG and WebP. Preserve correct color interpretation,
+        transforming colors when the pixel model changes and keeping only a
+        profile compatible with the resulting pixels. Remove GPS, camera,
+        EXIF, XMP and textual service metadata after applying orientation.
+        Without a supplied size_limit there is no smaller-file, byte-identity
+        or quality-control guarantee.
+
+        The successful response contains this operation's binary result. When
+        size_limit was supplied, also send X-Result-Bytes (whole encoded bytes)
+        and X-Size-Limit-Met (`true` if encoded bytes are at most the bound,
+        otherwise `false`). Omit both headers when size_limit was omitted or
+        empty. Do not wrap the file in JSON or multipart metadata.
+
+        The browser waits for the whole response and checks currentness before
+        consuming the operation. It initiates exactly one automatic download.
+        After handoff, a met or omitted bound resets the form; a miss keeps the
+        form, shows the actual size and that the bound was exceeded, and leaves
+        the original and parameters for retry. A failed or incomplete transfer
+        is not a successful result. A retry is a new submission, not a replay
+        of saved output; no Idempotency-Key is required or used to retrieve a
+        prior result.
+
+        Close partial uploads on parser failure or interruption. Release upload
+        handles, decoded images and intermediates when processing no longer
+        needs them, retaining ownership of native work until it actually ends.
+        Release response-owned output on completion or failure. A disconnect
+        or interrupted response does not guarantee an HTTP error body. Retain
+        no server original or result for later retrieval. Errors and logs must
+        not expose image bytes, original filenames, identifying metadata or
+        internal exception details. Browser download cleanup remains independent
+        of form reset.
+      requestBody:
+        required: true
+        description: One original and the supplied transformation parameters.
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImageProcessingRequest'
+            examples:
+              defaultJpeg:
+                summary: Browser default; file value denotes binary fixture contents
+                value:
+                  file: '<binary contents of test-image.png>'
+                  output_format: jpeg
+              widthOnly:
+                summary: Omitted output format falls back to JPEG with supplied width
+                value:
+                  file: '<binary contents of test-image.png>'
+                  max_width: 1200
+              bothBounds:
+                summary: Fit both bounds and retain transparency in PNG
+                value:
+                  file: '<binary contents of test-image.webp>'
+                  max_width: 1200
+                  max_height: 300
+                  output_format: png
+              emptyBounds:
+                summary: Empty dimensions impose no bound; explicit WebP counts as a parameter
+                value:
+                  file: '<binary contents of test-image.heic>'
+                  max_width: ''
+                  max_height: ''
+                  output_format: webp
+              sizeLimitOnly:
+                summary: Positive size_limit is a transformation parameter; JPEG fallback
+                value:
+                  file: '<binary contents of test-image.png>'
+                  size_limit: 0.5
+                  size_unit: mb
+              sizeLimitKb:
+                summary: Kilobyte bound with explicit JPEG
+                value:
+                  file: '<binary contents of test-image.png>'
+                  output_format: jpeg
+                  size_limit: 200
+                  size_unit: kb
+              sizeLimitWithWidth:
+                summary: Bound may reduce pixels below the width ceiling
+                value:
+                  file: '<binary contents of test-image.png>'
+                  max_width: 1200
+                  output_format: jpeg
+                  size_limit: 0.5
+                  size_unit: mb
+              emptySizeLimit:
+                summary: Empty size_limit applies no byte bound; existing geometry
+                value:
+                  file: '<binary contents of test-image.png>'
+                  max_width: 1200
+                  output_format: jpeg
+                  size_limit: ''
+      responses:
+        '200':
+          description: |
+            Complete decodable result in the effective output format, with the
+            corresponding media type and attachment filename. The original is
+            untouched. Content-Disposition is required and uses result.jpg for
+            JPEG, result.png for PNG or result.webp for WebP. No JSON wrapper,
+            result identifier or subsequent download URL is returned.
+
+            Omit X-Result-Bytes and X-Size-Limit-Met when size_limit was omitted
+            or empty. When size_limit was supplied, both headers are required:
+            X-Size-Limit-Met is `true` when encoded bytes are at most the bound
+            and `false` on a miss; X-Result-Bytes is the whole encoded size.
+            A miss is this 200, not 4xx. Example values describe binary
+            payloads, not literal response text or base64 encoding.
+          headers:
+            Content-Disposition:
+              description: Attachment filename matching the effective output format.
+              required: true
+              schema:
+                type: string
+                enum:
+                  - 'attachment; filename="result.jpg"'
+                  - 'attachment; filename="result.png"'
+                  - 'attachment; filename="result.webp"'
+              example: 'attachment; filename="result.jpg"'
+            X-Result-Bytes:
+              description: |
+                Whole encoded result bytes. Required when size_limit was
+                supplied; omit when the bound was omitted or empty.
+              schema:
+                type: integer
+                minimum: 1
+              example: 500000
+            X-Size-Limit-Met:
+              description: |
+                `true` when encoded bytes are at most the bound; `false` on a
+                miss. Required when size_limit was supplied; omit when the bound
+                was omitted or empty.
+              schema:
+                type: string
+                enum: ['true', 'false']
+              example: 'true'
+          content:
+            image/jpeg:
+              schema:
+                $ref: '#/components/schemas/Result'
+              example: '<binary JPEG result bytes>'
+            image/png:
+              schema:
+                $ref: '#/components/schemas/Result'
+              example: '<binary PNG result bytes>'
+            image/webp:
+              schema:
+                $ref: '#/components/schemas/Result'
+              example: '<binary WebP result bytes>'
+        '400':
+          description: Malformed multipart input that cannot be parsed; close partial uploads.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              example:
+                detail: Malformed multipart request.
+        '413':
+          description: |
+            File exceeds 20,000,000 bytes or the selected static image exceeds
+            40,000,000 decoded pixels, including a post-decode dimension recheck.
+            Equality at either limit is accepted. Multipart overhead is not
+            counted against the file-byte allowance. Ліміт ваги is not this cap.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                bytesExceeded:
+                  value:
+                    detail: Image exceeds 20,000,000 bytes.
+                pixelsExceeded:
+                  value:
+                    detail: Image exceeds 40,000,000 pixels.
+        '415':
+          description: Unsupported request media type or actual input image format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                notMultipart:
+                  value:
+                    detail: Use multipart/form-data.
+                unsupportedImage:
+                  value:
+                    detail: Choose a JPEG, PNG, WebP or HEIC image.
+        '422':
+          description: |
+            Result dimensions above the selected encoder limit;
+            missing file or all transformation parameters; invalid dimensions,
+            output choice or Ліміт ваги; empty, corrupted or animated input.
+            Parameter errors may use FastAPI's structured validation envelope;
+            explicit HTTP rejections use a readable detail string. Messages are
+            explanatory, not stable machine error codes. When multiple problems
+            exist, clients must not rely on a particular validation order.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/HTTPError'
+                  - $ref: '#/components/schemas/HTTPValidationError'
+              examples:
+                missingFile:
+                  value:
+                    detail:
+                      - loc: [body, file]
+                        msg: Field required
+                        type: missing
+                invalidDimension:
+                  value:
+                    detail:
+                      - loc: [body, max_width]
+                        msg: Input should be greater than or equal to 1
+                        type: greater_than_equal
+                        input: 0
+                        ctx:
+                          ge: 1
+                missingParameters:
+                  value:
+                    detail: Supply dimensions, an output format or a size limit.
+                unsupportedOutput:
+                  value:
+                    detail: Choose JPEG, PNG or WebP.
+                emptyInput:
+                  value:
+                    detail: Select a non-empty image.
+                corruptedInput:
+                  value:
+                    detail: Image is corrupted, animated or has invalid color information.
+                invalidSizeLimit:
+                  value:
+                    detail: size_limit must be a positive number with mb or kb or left empty.
+                missingSizeUnit:
+                  value:
+                    detail: size_limit requires size_unit mb or kb.
+                invalidSizeUnit:
+                  value:
+                    detail: size_unit must be mb or kb.
+        '500':
+          description: |
+            Internal decoding, color processing, transformation or encoding
+            failure not attributable to a client input rejection above. Return
+            a safe readable explanation when a response is still possible,
+            release operation resources and provide no successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              example:
+                detail: Image processing failed. Please try again.
+components:
+  schemas:
+    ImageProcessingRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          $ref: '#/components/schemas/Original'
+        max_width:
+          $ref: '#/components/schemas/MaximumDimension'
+        max_height:
+          $ref: '#/components/schemas/MaximumDimension'
+        output_format:
+          $ref: '#/components/schemas/OutputFormat'
+        size_limit:
+          $ref: '#/components/schemas/SizeLimit'
+        size_unit:
+          $ref: '#/components/schemas/SizeUnit'
+      anyOf:
+        - required: [output_format]
+        - required: [max_width]
+          properties:
+            max_width:
+              $ref: '#/components/schemas/PositiveDimension'
+        - required: [max_height]
+          properties:
+            max_height:
+              $ref: '#/components/schemas/PositiveDimension'
+        - required: [size_limit]
+          properties:
+            size_limit:
+              $ref: '#/components/schemas/PositiveSizeLimit'
+      description: |
+        At least one non-empty valid dimension, an explicit valid output format
+        or a positive size_limit must be supplied. Multipart values are
+        serialized as text; logical dimension values are positive whole pixel
+        counts and logical size_limit values are positive decimals. There is no
+        new product upper bound on a supplied dimension or size_limit; oversized
+        dimension bounds are valid and cannot enlarge the original. A huge
+        size_limit is valid and is simply met. Null is not a dimension, format,
+        size_limit or size_unit value. When size_limit is a positive number,
+        size_unit must be mb or kb. Empty size_limit omits the bound; size_unit
+        is then ignored.
+    Original:
+      type: string
+      format: binary
+      description: |
+        Binary contents of one non-empty static JPEG, PNG, WebP or HEIC original.
+        Filename and declared media type are not proof of support. Byte and pixel
+        limits require server content inspection; JSON Schema string length is
+        not used as a file-byte or decoded-pixel validator.
+      x-max-file-bytes: 20000000
+      x-max-decoded-pixels: 40000000
+    PositiveDimension:
+      type: integer
+      minimum: 1
+      description: Optional maximum width or height of the correctly oriented result, in pixels.
+    MaximumDimension:
+      anyOf:
+        - $ref: '#/components/schemas/PositiveDimension'
+        - type: string
+          const: ''
+      description: Omission or an empty multipart part imposes no bound and supplies no parameter.
+    OutputFormat:
+      type: string
+      enum: [jpeg, png, webp]
+      description: |
+        JPEG is the browser form default. If this part is omitted, valid supplied
+        dimensions or a valid size_limit select JPEG. No schema default is
+        applied before checking that the caller supplied a transformation
+        parameter. Empty is invalid.
+    PositiveSizeLimit:
+      type: number
+      exclusiveMinimum: 0
+      description: |
+        Positive decimal Ліміт ваги. Bound bytes equal this number × 1,000,000
+        for mb or × 1,000 for kb. Comparison uses whole encoded result bytes.
+    SizeLimit:
+      anyOf:
+        - $ref: '#/components/schemas/PositiveSizeLimit'
+        - type: string
+          const: ''
+      description: Omission or an empty multipart part imposes no result byte bound.
+    SizeUnit:
+      type: string
+      enum: [mb, kb]
+      description: |
+        Required when size_limit is a positive number. Ignored when size_limit
+        is omitted or empty. Not a transformation parameter by itself. Labels
+        Mb and Kb on the form map to these lowercase values.
+    Result:
+      type: string
+      format: binary
+      description: Complete encoded image bytes in the effective output format; not base64 or JSON.
+    HTTPError:
+      type: object
+      required: [detail]
+      additionalProperties: false
+      properties:
+        detail:
+          type: string
+          description: Safe readable explanation; wording is not a machine-readable error code.
+    HTTPValidationError:
+      type: object
+      required: [detail]
+      additionalProperties: false
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+    ValidationError:
+      type: object
+      required: [loc, msg, type]
+      additionalProperties: false
+      properties:
+        loc:
+          type: array
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+        msg:
+          type: string
+        type:
+          type: string
+        input:
+          description: Optional rejected non-image parameter; never include image bytes or identifying file data.
+        ctx:
+          type: object
+          description: Optional safe validation context, such as a dimension constraint; never raw exceptions.

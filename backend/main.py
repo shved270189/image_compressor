@@ -148,7 +148,7 @@ async def parse_image_request(request: Request):
                 raise HTTPException(422, "size_unit must be mb or kb.")
             size_limit_bytes = int(
                 Decimal(size_limit)
-                * Decimal(1_048_576 if size_unit == "mb" else 1024)
+                * Decimal(1_000_000 if size_unit == "mb" else 1000)
             )
         if output_format is None and not any(dimensions) and size_limit_bytes is None:
             raise HTTPException(

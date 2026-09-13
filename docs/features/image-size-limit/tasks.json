@@ -1,0 +1,85 @@
+{
+  "slug": "image-size-limit",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Extra-shrink encoded output to meet a byte bound",
+      "layer": "domain",
+      "deps": [],
+      "acs": ["AC-04", "AC-05", "AC-12"],
+      "dod": "tests/test_images.py extra-shrink and empty-bound geometry cases pass: 2400x1200 with width 1200 stays 1200x600 when unbound; a tighter bound yields width under 1200 at 2:1; one-pixel miss still returns a file; comparison uses whole encoded bytes.",
+      "files_hint": ["backend/images.py", "tests/test_images.py"],
+      "file": "docs/features/image-size-limit/tasks/extra-shrink-to-meet-bound.md"
+    },
+    {
+      "id": "T2",
+      "title": "Parse and convert optional size_limit fields",
+      "layer": "ports",
+      "deps": ["T1"],
+      "acs": ["AC-01", "AC-03", "AC-08", "AC-12"],
+      "dod": "tests/test_images_api.py accepts empty or omitted size_limit with existing geometry, accepts size_limit-only JPEG, converts 0.5 mb to 524288 and 200 kb to 204800, and returns 422 for zero, negative, non-numeric size_limit and missing/invalid size_unit without a result.",
+      "files_hint": ["backend/main.py", "tests/test_images_api.py"],
+      "file": "docs/features/image-size-limit/tasks/parse-and-convert-size-limit.md"
+    },
+    {
+      "id": "T3",
+      "title": "Signal miss versus met-limit with response headers",
+      "layer": "ports",
+      "deps": ["T2"],
+      "acs": ["AC-06", "AC-07"],
+      "dod": "tests/test_images_api.py 200 responses omit X-Result-Bytes and X-Size-Limit-Met when the bound is omitted; a met bound sends both with X-Size-Limit-Met true and bytes at most the bound; an unattainable bound still returns 200 with X-Size-Limit-Met false and the encoded size.",
+      "files_hint": ["backend/main.py", "tests/test_images_api.py"],
+      "file": "docs/features/image-size-limit/tasks/signal-miss-with-headers.md"
+    },
+    {
+      "id": "T4",
+      "title": "Add Size limit number and unit radios",
+      "layer": "ui",
+      "deps": [],
+      "acs": ["AC-02", "AC-08"],
+      "dod": "SCR-01 default/ready/validation checks pass: native Size limit number with Mb/Kb radios left of the number, Mb initially selected, empty allowed; zero/negative rejected locally with the specified copy while the original remains; new file selection resets bound and unit to Mb.",
+      "files_hint": ["frontend/src/App.tsx"],
+      "file": "docs/features/image-size-limit/tasks/add-size-limit-controls.md"
+    },
+    {
+      "id": "T5",
+      "title": "Download on miss or met-limit without stale work",
+      "layer": "ui",
+      "deps": ["T3", "T4"],
+      "acs": ["AC-06", "AC-07", "AC-09", "AC-10", "AC-11"],
+      "dod": "SCR-01 loading/success/miss/error checks pass: one download then reset when omitted or X-Size-Limit-Met true; miss keeps the form and shows actual bytes; controls including Size limit lock while busy; new file and stale completions never restore old miss facts or extra downloads.",
+      "files_hint": ["frontend/src/App.tsx"],
+      "file": "docs/features/image-size-limit/tasks/handle-miss-and-met-limit.md"
+    },
+    {
+      "id": "T6",
+      "title": "Extend smoke coverage for the size-limit contract",
+      "layer": "tests",
+      "deps": ["T3", "T4"],
+      "acs": ["AC-01", "AC-03", "AC-09"],
+      "dod": "tests/test_smoke.py still covers health, assets, PNG to WebP without miss headers, and API 404s including no result lookup; it also posts size_limit-only JPEG and pins Size limit form copy.",
+      "files_hint": ["tests/test_smoke.py"],
+      "file": "docs/features/image-size-limit/tasks/extend-smoke-for-size-limit.md"
+    },
+    {
+      "id": "T7",
+      "title": "Verify browser acceptance of Size limit and miss",
+      "layer": "tests",
+      "deps": ["T5"],
+      "acs": ["AC-02", "AC-06", "AC-07", "AC-11"],
+      "dod": "docs/features/image-size-limit/_audit/browser-acceptance.md records passing keyboard/focus, 360 and 1280 layouts without page overflow, reduced motion, met-limit reset, miss keep-form, and owner contrast acceptance of the exceeded notice.",
+      "files_hint": ["docs/features/image-size-limit/_audit/browser-acceptance.md"],
+      "file": "docs/features/image-size-limit/tasks/verify-browser-acceptance.md"
+    },
+    {
+      "id": "T8",
+      "title": "Document the optional size-limit workflow",
+      "layer": "docs",
+      "deps": ["T6", "T7"],
+      "acs": ["AC-01", "AC-09"],
+      "dod": "README.md and docs/architecture-map.md describe optional Ліміт ваги, miss versus met-limit, and the current OpenAPI path; documented build, pytest and both lint commands pass.",
+      "files_hint": ["README.md", "docs/architecture-map.md"],
+      "file": "docs/features/image-size-limit/tasks/document-size-limit-workflow.md"
+    }
+  ]
+}

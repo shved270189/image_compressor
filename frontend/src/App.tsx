@@ -164,7 +164,7 @@ export default function App() {
       const header = response.headers.get('x-size-limit-met')
       const resultBytes = Number(response.headers.get('x-result-bytes')) || blob.size
       const met = !sizeLimit || header === 'true' || (header !== 'false'
-        && blob.size <= Math.trunc(Number(sizeLimit) * (sizeUnit === 'mb' ? 1_048_576 : 1024)))
+        && blob.size <= Math.trunc(Number(sizeLimit) * (sizeUnit === 'mb' ? 1_000_000 : 1000)))
       if (met) {
         selectFile(null)
         if (fileInput.current) {
@@ -215,9 +215,8 @@ export default function App() {
               <p id="dimension-help" className="mt-2 text-xs leading-relaxed text-muted">Leave either blank to keep it unconstrained. The whole image fits within your limits.</p>
               <label htmlFor="size-limit" className="mb-2 mt-6 block text-sm font-semibold">Size limit <span className="font-normal text-muted">· optional</span></label>
               <div className="flex min-w-0 items-center gap-3">
-                <label className="flex items-center gap-2 text-sm"><input type="radio" name="size-unit" value="mb" checked={sizeUnit === 'mb'} onChange={() => setSizeUnit('mb')} />Mb</label>
-                <label className="flex items-center gap-2 text-sm"><input type="radio" name="size-unit" value="kb" checked={sizeUnit === 'kb'} onChange={() => setSizeUnit('kb')} />Kb</label>
                 <input id="size-limit" inputMode="decimal" value={sizeLimit} onChange={(event) => setSizeLimit(event.target.value)} placeholder="None" aria-describedby="size-limit-help file-error" aria-invalid={invalid.includes('size_limit')} className="field min-w-0 flex-1" />
+                <select id="size-unit" aria-label="Size unit" aria-describedby="size-limit-help file-error" aria-invalid={invalid.includes('size_unit')} value={sizeUnit} onChange={(event) => setSizeUnit(event.target.value)} className="field w-auto shrink-0"><option value="mb">Mb</option><option value="kb">Kb</option></select>
               </div>
               <p id="size-limit-help" className="mt-2 text-xs leading-relaxed text-muted">Leave empty for no result size bound.</p>
               <label htmlFor="format" className="mb-2 mt-6 block text-sm font-semibold">Output format</label>

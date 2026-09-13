@@ -1,6 +1,6 @@
 ---
 status: living
-updated_at: "2026-09-06"
+updated_at: "2026-09-12"
 ---
 
 # Roadmap — image-compressor
@@ -17,13 +17,13 @@ The owner can use a modern local single-page form to resize, convert and compres
 |---|---|---|:---:|---|
 | 1 | Application foundation — [`_scaffold`](features/_scaffold/) | [architecture-map.md §Module inventory](architecture-map.md#module-inventory) | M | shipped |
 | 2 | Resize and convert an image — [`image-resize-convert`](features/image-resize-convert/) | [spec.md §1. Context](features/image-resize-convert/spec.md#1-context) | M | shipped |
-| 3 | Compress an image to a file-size limit — `image-size-limit` | [idea-brief.md §2. Problem](idea-brief.md#2-problem), [§7. Recommendation](idea-brief.md#7-recommendation) | S | idea |
+| 3 | Compress an image to a file-size limit — [`image-size-limit`](features/image-size-limit/) | [spec.md §1. Context](features/image-size-limit/spec.md#1-context) | S | spec'd |
 
 **Resize and convert an image** delivers the complete selection-to-download flow, independently optional maximum width and height, aspect-ratio preservation, format selection with JPEG as the default and actual result dimensions and file size. An optional frontend-only preview appears above the form when the browser can display the selected file; it never uploads the file or blocks processing when unavailable. It includes the responsive visual design, accessible controls, clear errors and motion required by the brief, with mobile, desktop and reduced-motion verification. Upload limits and cleanup apply from this first processing increment. File-size targeting belongs to the following increment. The [feature specification](features/image-resize-convert/spec.md) records the agreed behavior.
 
-**Compress an image to a file-size limit** extends the same form and processing path with an independently optional MB limit, automatic dimension reduction when needed and clear handling of unattainable limits. Omitting any constraint leaves that constraint unset; all three may be omitted.
+**Compress an image to a file-size limit** extends the same form and processing path with an independently optional Ліміт ваги, automatic dimension reduction when needed and visible handling when the bound cannot be met. Omitting any constraint leaves that constraint unset; all three may be omitted. The [feature specification](features/image-size-limit/spec.md) records the agreed behavior.
 
-Size M reflects the foundation's module and API setup, and the first feature's new processing module, HTTP interface and complete UI flow. Size S reflects the bounded extension of that existing flow for file-size targeting; its acceptance rules must be settled before implementation.
+Size M reflects the foundation's module and API setup, and the first feature's new processing module, HTTP interface and complete UI flow. Size S reflects the bounded extension of that existing flow for file-size targeting.
 
 ## Not yet specified
 
@@ -39,11 +39,9 @@ None. Fog count: 0. Remaining questions are precise enough to record as open dec
 
 ## Open decisions
 
-| # | Question | Type | Owner | Blocks |
-|---|---|:---:|:---:|:---:|
-| D2 | What minimum quality and dimensions are acceptable, and what should the user receive when the requested file-size limit cannot be met? See [idea-brief.md §6. Risks](idea-brief.md#6-risks) and [§8. Open questions](idea-brief.md#8-open-questions). | grilling | human | 3 |
+None. Fog count: 0.
 
-D2 closes during the file-size-limit specification. The file-size-limit feature remains an idea.
+D2 is resolved in [image-size-limit spec.md](features/image-size-limit/spec.md): there is no quality or dimension floor beyond one pixel and the smallest file of the chosen format; an unattainable bound still returns that smallest result with an exceeded notice and a kept form.
 
 ## Decisions so far
 
@@ -54,7 +52,7 @@ D2 closes during the file-size-limit specification. The file-size-limit feature 
 - Limit this roadmap to local use — [Out of scope](#out-of-scope), as selected by the owner during roadmap review.
 - Enforce request-scoped image limits and cleanup without later retrieval — [ADR 0004](features/image-resize-convert/adr/0004-return-results-within-the-current-operation.md) (closes D3).
 
-Input/output formats and upload limits (D1) are resolved in [spec.md §5. Acceptance criteria](features/image-resize-convert/spec.md#5-acceptance-criteria) and [§6. Non-functional requirements](features/image-resize-convert/spec.md#6-non-functional-requirements).
+Input/output formats and upload limits (D1) are resolved in [spec.md §5. Acceptance criteria](features/image-resize-convert/spec.md#5-acceptance-criteria) and [§6. Non-functional requirements](features/image-resize-convert/spec.md#6-non-functional-requirements). Minimum quality, unattainable file-size limits and extra shrink when a Ліміт ваги is supplied (D2) are resolved in [image-size-limit spec.md](features/image-size-limit/spec.md).
 
 ## Dependency graph
 

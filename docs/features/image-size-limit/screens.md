@@ -39,7 +39,7 @@ state table.
 | Shell | Existing `main`, product identity, heading and theme tokens |
 | File input | Labeled native `input type="file"`, one file, native filename display |
 | Dimension inputs | Two labeled optional native number inputs, positive whole pixels, no product upper bound |
-| Size limit inputs | Labeled optional native number input for a positive decimal, with a native radio group `Mb` / `Kb` placed to the left of the number; `Mb` selected initially; empty allowed |
+| Size limit inputs | Labeled optional native number input for a positive decimal, with a native `select` of `Mb` / `Kb` placed to the right of the number; `Mb` selected initially; empty allowed |
 | Format select | Labeled native `select` with JPEG, PNG and WebP |
 | Process button | Native submit `button`; same action is available again after recovery or miss |
 | Preview | Native `img` with meaningful alt text; whole oriented image, contained without cropping |
@@ -61,9 +61,9 @@ application screens. There is no history, lookup or retrieve screen (AC-09).
 **Layout:** existing two-column page at 1280 CSS pixels (intro + form); one
 column at 360. Product identity and heading precede the optional Preview above
 the form. The form contains file selection, maximum dimensions, Ліміт ваги
-(unit radios left of the number), output format, notices, feedback and Process
-image. At 360 CSS pixels, dimension fields stack; unit radios stay to the left
-of the number and wrap as one group with no horizontal page overflow. Preview
+(unit selector right of the number), output format, notices, feedback and Process
+image. At 360 CSS pixels, dimension fields stack; the unit selector stays to the
+right of the number with no horizontal page overflow. Preview
 preserves the whole image and correct visible orientation.
 
 | State | Trigger / condition and behavior | Components (native fallback inventory) | Source-ref |
@@ -85,13 +85,13 @@ preserves the whole image and correct visible orientation.
   bytes before preparing Preview. Exactly 20,000,000 bytes is eligible. Ліміт
   ваги is not an upload cap. Keep file selection enabled after local rejection;
   parameter controls remain disabled until an eligible selection.
-- **Ліміт ваги:** visible label `Size limit` with optional. Native radio group
-  `Mb` and `Kb` sits to the left of the number. `Mb` is selected initially and
+- **Ліміт ваги:** visible label `Size limit` with optional. Native `select` of
+  `Mb` and `Kb` sits to the right of the number. `Mb` is selected initially and
   after every reset. Empty remains allowed and means no bound. A positive
   decimal is accepted; zero, negative or otherwise non-positive values are
   rejected locally before submit, matching existing dimension checks. There is
   no product upper bound on the entered number. Unit without a filled number is
-  ignored; a filled number always has a unit because one radio is selected.
+  ignored; a filled number always has a unit because the selector always has a value.
 - **Parameters and notices:** reuse existing dimension and format copy from the
   current form. JPEG transparency and HEIC guidance stay as they are. Do not
   promise a smaller file when the bound is empty.
@@ -106,7 +106,7 @@ preserves the whole image and correct visible orientation.
   (`false`) follows miss. Reset does not wait for disk-save confirmation.
   Download URL cleanup must not interrupt the initiated download.
 - **Accessibility and motion:** native labels, keyboard access and visible
-  focus for the number and both unit radios. Associate validation with
+  focus for the number and the unit selector. Associate validation with
   `size_limit` / `size_unit` when `loc` names them. Announce miss with a polite
   live region, not `role="alert"`. Expose busy with `aria-busy` and Status
   text. After successful reset, return focus to file selection. Readable
@@ -159,7 +159,7 @@ Width (px)              Height (px)
 Leave either blank to keep it unconstrained.
 
 Size limit · optional
-(•) Mb  ( ) Kb   [empty, disabled]
+[empty, disabled]  [Mb v, disabled]
 Leave empty for no result size bound.
 
 Output format            [JPEG v, disabled]
@@ -189,7 +189,7 @@ Width (px)              Height (px)
 [1200              ]   [empty             ]
 
 Size limit · optional
-(•) Mb  ( ) Kb   [0.5            ]
+[0.5            ]  [Mb v]
 Leave empty for no result size bound.
 
 Output format            [JPEG v]
@@ -201,13 +201,12 @@ HDR becomes ordinary 8-bit output and may not retain its original appearance.
 Your result downloads automatically.
 ```
 
-At 360 CSS pixels the unit radios stay immediately left of the number. If the
+At 360 CSS pixels the unit selector stays immediately right of the number. If the
 row wraps, wrap the group together:
 
 ```text
 Size limit · optional
-(•) Mb  ( ) Kb
-[0.5                   ]
+[0.5                   ]  [Mb v]
 ```
 
 ### WF-03 — Validation
@@ -222,7 +221,7 @@ Local bound rejection                 Local file rejection
 Choose an image                       [Choose file] empty.png
 [Choose file] selected.png            Choose a non-empty image.
 Size limit · optional                 [Parameters disabled]
-(•) Mb  ( ) Kb   [0]                  [Process image, disabled]
+[0]  [Mb v]                           [Process image, disabled]
 Ліміт ваги must be a positive
 number with Mb or Kb or left empty.
 [Remaining form values retained]
@@ -244,7 +243,7 @@ Choose an image          [Choose file, disabled] selected.png
 Width (px)               Height (px)
 [1200, disabled]        [empty, disabled]
 Size limit · optional
-(•) Mb  ( ) Kb   [0.5, disabled]
+[0.5, disabled]  [Mb v, disabled]
 Output format            [JPEG v, disabled]
 [Current notices]
 [Process image, disabled] Processing…
@@ -262,7 +261,7 @@ Choose an image          [Choose file] selected.png
 Width (px)               Height (px)
 [1200              ]    [empty             ]
 Size limit · optional
-(•) Mb  ( ) Kb   [0.5            ]
+[0.5            ]  [Mb v]
 Output format            [JPEG v]
 [Current notices]
 Processing failed. Please try again.
@@ -280,7 +279,7 @@ Choose an image          [Choose file] selected.png
 Width (px)               Height (px)
 [1200              ]    [empty             ]
 Size limit · optional
-(•) Mb  ( ) Kb   [0.5            ]
+[0.5            ]  [Mb v]
 Output format            [JPEG v]
 [Current notices]
 The result is 612,344 bytes. The size limit was exceeded.
@@ -289,9 +288,9 @@ Your result downloads automatically.
 ```
 
 All wireframes describe the same responsive form. At 360 CSS pixels, stack
-width and height, keep unit left of the number, and wrap notices without
+width and height, keep the unit selector right of the number, and wrap notices without
 horizontal page overflow. At 1280 CSS pixels, keep dimensions in two columns
-and unit radios in one row with the number.
+and the unit selector in one row with the number.
 
 ## New components
 
@@ -308,6 +307,6 @@ every state, including empty bound, bound-plus-JPEG-only submit, invalid bound
 kept original, loading lock of Ліміт ваги, miss keep-form with actual bytes,
 met-limit reset that also clears bound and miss facts, new-file reset to Mb,
 stale completion suppression and clean reload. Check the keyboard journey for
-number and both unit radios, visible focus, owner-approved contrast for the
+number and the unit selector, visible focus, owner-approved contrast for the
 exceeded notice, reduced motion and no horizontal overflow at 360 and 1280 CSS
 pixels.
