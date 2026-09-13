@@ -48,6 +48,7 @@ def test_size_limit_miss_and_submit_wiring():
     assert 'aria-live="polite"' in source
     assert "size_limit" in source and "size_unit" in source
     assert "setMiss(" in source
+    assert "pending?.abort()" in source
 
 
 def test_skeleton():

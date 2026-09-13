@@ -15,3 +15,5 @@
 | T8 | Document the optional size-limit workflow | docs | Tech Lead | S | T6, T7 | done |
 
 **Total:** 8 tasks, ~4 person-days.
+
+Review follow-up 2026-09-13 (`_review/review-2026-09-13.md` F1–F4): Size limit help copy, architecture-map D2, AC-10 new-file/stale abort, AC-11 live lock and failure retry. All eight tasks remain done.

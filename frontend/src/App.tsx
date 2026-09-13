@@ -59,6 +59,10 @@ export default function App() {
   }, [])
 
   function selectFile(selected: File | null) {
+    const pending = operation.current
+    operation.current = null
+    setBusy(false)
+    pending?.abort()
     releasePreview()
     setFile(null)
     setWidth('')

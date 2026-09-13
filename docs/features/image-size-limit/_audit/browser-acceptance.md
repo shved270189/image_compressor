@@ -15,8 +15,13 @@ No browser-test runner was added.
 | Desktop Chrome | Miss `0.001` Kb JPEG: one further `result.jpg` download; form kept (`noisy.png`, `0.001`, Kb, JPEG, preview); notice `The result is 629 bytes. The size limit was exceeded.` with `role="status"` `aria-live="polite"` | PASS |
 | Desktop Chrome | After miss, Size limit and Process remain enabled; no fabricated percentages | PASS |
 | Desktop Chrome | Reload after miss restores empty form, no preview, no miss notice | PASS |
+| Desktop Chrome, 360×800 CSS px | Size limit help copy `Leave empty for no result size bound.`; `scrollWidth === innerWidth === 360` | PASS; no horizontal page overflow |
+| Desktop Chrome | Mid-flight: delayed `/api/v1/images/process`; file input `disabled`, Size limit fieldset `disabled`, submit `Processing…`, `aria-busy=true`, no percentages | PASS |
+| Desktop Chrome | After miss `0.001` Kb on `a.png`, select `b.png`: miss copy gone, bound empty, unit Mb, JPEG, new preview blob | PASS |
+| Desktop Chrome | In-flight miss aborted by new file: after 8s delay, no old miss, no extra download, `a.png` kept with empty bound | PASS |
+| Desktop Chrome | Offline process: `The transfer failed. Please try again.`; `b.png`, `0.5` Kb, JPEG and preview kept; Process enabled | PASS |
 | Project owner | Exceeded-notice contrast | ACCEPTED via the existing ink-on-surface pair (`#202b25` on `#fffcf5`); agent-measured 14.3:1. Same tokens the owner accepted for labels and fields on 2026-09-06 |
 
-Loading lock of Size limit is implemented as the existing fieldset `disabled={!file || busy}` plus `disabled={busy}` on the file input. The miss encode completed before a mid-flight snapshot; the lock is the same busy path already accepted for dimensions.
+Loading lock of Size limit is the fieldset `disabled={!file || busy}` plus `disabled={busy}` on the file input. Mid-flight snapshot used an 8s fetch delay. New-file abort clears `operation.current` so a stale completion cannot restore miss facts or start another download.
 
 Native Safari/Firefox and real-device checks for this increment were not repeated. Android remains deferred.
