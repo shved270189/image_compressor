@@ -41,6 +41,15 @@ def test_size_limit_form_copy():
     assert 'aria-describedby="size-limit-help file-error"' in source
 
 
+def test_form_has_no_publish_or_configuration_check_action():
+    source = Path("frontend/src/App.tsx").read_text()
+    lowered = source.lower()
+    assert "publish" not in lowered
+    assert "configuration check" not in lowered
+    assert "kamal" not in lowered
+    assert re.search(r"\bdeploy\b", source, re.IGNORECASE) is None
+
+
 def test_size_limit_miss_and_submit_wiring():
     source = Path("frontend/src/App.tsx").read_text()
     assert "body.append('size_limit', sizeLimit)" in source
