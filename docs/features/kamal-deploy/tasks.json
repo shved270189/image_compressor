@@ -1,0 +1,85 @@
+{
+  "slug": "kamal-deploy",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Ignore the Secrets file in git",
+      "layer": "infra",
+      "deps": [],
+      "acs": ["AC-02"],
+      "dod": "git check-ignore -q .kamal/secrets exits 0; .gitignore lists .kamal/secrets; no .kamal/secrets file is committed.",
+      "files_hint": [".gitignore"],
+      "file": "docs/features/kamal-deploy/tasks/ignore-the-secrets-file.md"
+    },
+    {
+      "id": "T2",
+      "title": "Record Deploy configuration with locked host facts",
+      "layer": "infra",
+      "deps": [],
+      "acs": ["AC-01", "AC-08"],
+      "dod": "committed config/deploy.yml contains host 138.201.118.229, both Public site names, image shved270189/image_compressor, registry username shved270189, HTTPS, service image_compressor, builder.arch amd64, proxy.app_port 8000 and proxy.healthcheck.path /api/health, with no secret values.",
+      "files_hint": ["config/deploy.yml"],
+      "file": "docs/features/kamal-deploy/tasks/record-deploy-configuration.md"
+    },
+    {
+      "id": "T3",
+      "title": "Add a throwaway Secrets file fixture",
+      "layer": "tests",
+      "deps": ["T1"],
+      "acs": ["AC-03"],
+      "dod": "tests/fixtures/kamal/secrets exists and contains KAMAL_REGISTRY_PASSWORD=test-registry-password; it is not production secrets and is not .kamal/secrets.",
+      "files_hint": ["tests/fixtures/kamal/secrets"],
+      "file": "docs/features/kamal-deploy/tasks/add-throwaway-secrets-fixture.md"
+    },
+    {
+      "id": "T4",
+      "title": "Implement the offline Configuration check success path",
+      "layer": "ports",
+      "deps": ["T2", "T3"],
+      "acs": ["AC-01", "AC-03", "AC-08"],
+      "dod": "uv run pytest tests/test_kamal_deploy.py::test_configuration_check_succeeds_offline passes without invoking Kamal or contacting the host or registry.",
+      "files_hint": ["tests/test_kamal_deploy.py"],
+      "file": "docs/features/kamal-deploy/tasks/implement-offline-configuration-check.md"
+    },
+    {
+      "id": "T5",
+      "title": "Fail the Configuration check with named missing fields and secrets",
+      "layer": "tests",
+      "deps": ["T4"],
+      "acs": ["AC-04"],
+      "dod": "missing-secret and missing-field tests in tests/test_kamal_deploy.py fail the check, name each gap in glossary terms, and do not report Configuration check success.",
+      "files_hint": ["tests/test_kamal_deploy.py"],
+      "file": "docs/features/kamal-deploy/tasks/fail-check-with-named-gaps.md"
+    },
+    {
+      "id": "T6",
+      "title": "Reject committed secrets and production-target mismatch",
+      "layer": "tests",
+      "deps": ["T1", "T4"],
+      "acs": ["AC-02", "AC-08"],
+      "dod": "tests/test_kamal_deploy.py asserts .kamal/secrets is gitignored, committed files have no secret values, and recipe port/path are 8000 and /api/health; a mismatch is not accepted as the production target.",
+      "files_hint": ["tests/test_kamal_deploy.py"],
+      "file": "docs/features/kamal-deploy/tasks/reject-committed-secrets-and-production-target.md"
+    },
+    {
+      "id": "T7",
+      "title": "Document the later publish command",
+      "layer": "docs",
+      "deps": ["T2"],
+      "acs": ["AC-05"],
+      "dod": "root README.md contains exactly bundle exec kamal deploy as the later publish command; this increment does not run it; docs/architecture-map.md no longer claims config/deploy.yml is absent.",
+      "files_hint": ["README.md", "docs/architecture-map.md"],
+      "file": "docs/features/kamal-deploy/tasks/document-later-publish-command.md"
+    },
+    {
+      "id": "T8",
+      "title": "Keep the compression form and existing smoke unchanged",
+      "layer": "tests",
+      "deps": ["T2"],
+      "acs": ["AC-06", "AC-07"],
+      "dod": "uv run pytest tests/test_smoke.py passes, including a new assertion that the form exposes no publish or Configuration check action; frontend/ and backend/ are untouched.",
+      "files_hint": ["tests/test_smoke.py"],
+      "file": "docs/features/kamal-deploy/tasks/keep-compression-form-unchanged.md"
+    }
+  ]
+}

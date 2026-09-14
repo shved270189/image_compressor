@@ -141,27 +141,119 @@ Containers in prose: the only container this feature owns is the Configuration c
 
 ## 6. Runtime view
 
-**Critical flow 1: Configuration check**
+Size S: three command-level flows with collapsed internal steps. Participants stay generic. Local Deploy configuration and the Secrets file are the data-store stand-in (files, not a database). The production host and the container registry appear only as an external system that the Configuration check must not contact.
+
+### Record deploy configuration
+
+Covers US-01, US-02, US-05 and AC-01, AC-02, AC-05, AC-08.
 
 ```mermaid
 sequenceDiagram
-    actor ProjectOwner as Project owner
-    participant Check as Configuration check
-    participant Recipe as Deploy configuration
-    participant Secrets as Secrets file
-    ProjectOwner->>Check: run Configuration check
-    Check->>Recipe: read required non-secret fields
-    Check->>Secrets: read required registry password
-    alt recipe complete and registry password present
-        Check-->>ProjectOwner: success
-    else required field or secret missing
-        Check-->>ProjectOwner: failure naming each gap in glossary terms
+    autonumber
+    participant C as <client>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over C,S: Precondition: Project owner knows host address, both Public site names, image name and registry username
+    C->>S: record Deploy configuration
+    alt required facts present, secrets stay local, port and path match the application image
+        S->>D: write non-secret recipe fields
+        Note over S,D: persists Deploy configuration
+        D-->>S: ack
+        S->>D: write secret values to Secrets file
+        Note over S,D: persists Secrets file locally (gitignored)
+        D-->>S: ack
+        S->>D: record later publish command in README
+        Note over S,D: records later publish command bundle exec kamal deploy
+        D-->>S: ack
+        S-->>C: recipe ready
+    else secret value in committed recipe
+        S-->>C: reject, secret values belong only in Secrets file
+    else port or health-check path does not match the application image
+        S-->>C: reject, production-target invariant violated
     end
+    Note over C,S: Postcondition: committed recipe has required non-secret facts, secret values exist only in Secrets file, README names the later publish command
 ```
 
-The happy path covers AC-03. The missing-field branch covers AC-04. Recording the recipe (AC-01), secret absence from git (AC-02), the README later command (AC-05), and unchanged form/processing (AC-06, AC-07, AC-08) are file and product invariants, not extra runtime flows.
+### Run configuration check
 
-**Critical flow 2:** <!-- N/A: size S, one actor-facing command, failure mode inlined as alt -->
+Covers US-03, US-04 and AC-03, AC-04.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as <client>
+    participant S as <service>
+    participant D as <data-store>
+    participant X as <external-system>
+
+    Note over C,S: Precondition: Deploy configuration exists locally and the Project owner can run the Configuration check
+    C->>S: run Configuration check
+    S->>D: read required non-secret recipe fields
+    D-->>S: recipe fields
+    S->>D: read required registry password from Secrets file
+    D-->>S: secret presence
+    Note over S,X: does not contact production host or container registry
+    alt recipe complete and registry password present
+        S-->>C: success
+    else required field or secret missing
+        S-->>C: fail, name each missing field or secret in glossary terms
+    end
+    Note over C,S: Postcondition: success only when every required field and the registry password are present, with zero connections to the host or registry
+```
+
+### Cross-cutting: form has no publish action
+
+Covers US-06 and AC-06, AC-07.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as <client>
+    participant S as <service>
+
+    Note over C,S: Precondition: Image owner uses the existing single-image form, or anyone without the Secrets file looks at that form
+    C->>S: use compression form
+    alt Image owner processes one image
+        C->>S: select image, set limits, process
+        Note over C,S: no persistent image store
+        S-->>C: download result with existing limits and cleanup
+    else anyone looks for a publish or Configuration check action on the form
+        S-->>C: no such action, host facts are not a form capability
+    end
+    Note over C,S: Postcondition: compression behaviour unchanged, form exposes no publish or Configuration check action
+```
+
+**Use-case coverage**
+
+| User story | Flow |
+|---|---|
+| US-01 Record deploy configuration | Record deploy configuration |
+| US-02 Keep secrets local | Record deploy configuration |
+| US-03 Run configuration check | Run configuration check |
+| US-04 See a missing-field failure | Run configuration check (missing-field branch) |
+| US-05 Read the later publish command | Record deploy configuration |
+| US-06 Leave the compression form unchanged | Cross-cutting: form has no publish action |
+
+**AC coverage**
+
+| AC | Where shown |
+|---|---|
+| AC-01 | Record deploy configuration — happy path |
+| AC-02 | Record deploy configuration — secrets written to Secrets file; `else` secret value in committed recipe |
+| AC-03 | Run configuration check — happy path |
+| AC-04 | Run configuration check — `else` required field or secret missing |
+| AC-05 | Record deploy configuration — README later publish command |
+| AC-06 | Cross-cutting: form has no publish action — `else` no publish or Configuration check action |
+| AC-07 | Cross-cutting: form has no publish action — process one image, no persistent image store |
+| AC-08 | Record deploy configuration — happy-path guard and `else` port or health-check path mismatch |
+
+**Flags (not ADRs)**
+
+- Run configuration check uses `<external-system>` for the production host and container registry. Those are §3 context systems, not an internal §5 container. Drawn only to show isolation (zero connections).
+- Cross-cutting form flow uses the existing application image as `<service>`. That is not a new §5 building block.
+- `<data-store>` is local files (Deploy configuration and the Secrets file), not a database. No entity, column or index appears in any persist note.
+- All three flows are sync. No idempotency-key, retry or dead-letter.
 
 ## 7. Deployment view
 
