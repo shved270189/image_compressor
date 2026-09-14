@@ -10,4 +10,5 @@ frontend/dist/
 vendor/bundle/
 .env
 .env.*
+.kamal/secrets
 .DS_Store
