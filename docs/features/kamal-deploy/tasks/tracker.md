@@ -6,7 +6,7 @@
 | # | Task | Layer | Owner | Estimate | Blocked by | Status |
 |---|---|---|---|---|---|---|
 | T1 | Ignore the Secrets file in git | infra | Tech Lead | S | — | done |
-| T2 | Record Deploy configuration with locked host facts | infra | Tech Lead | S | — | todo |
+| T2 | Record Deploy configuration with locked host facts | infra | Tech Lead | S | — | done |
 | T3 | Add a throwaway Secrets file fixture | tests | Tech Lead | S | T1 | todo |
 | T4 | Implement the offline Configuration check success path | ports | Tech Lead | M | T2, T3 | todo |
 | T5 | Fail the Configuration check with named missing fields and secrets | tests | Tech Lead | M | T4 | todo |
