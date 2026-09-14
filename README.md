@@ -122,6 +122,14 @@ See [architecture map](docs/architecture-map.md), [ADRs](docs/adr/), and
 [scaffold evidence](docs/features/_scaffold/tasks.json).
 
 There is no database or migration tool; migration checks are N/A. Kamal lives in
-`Gemfile` and runs through `bundle exec kamal`. Server addresses, registry, secrets,
-domain and live deployment require a later deployment task. The future proxy uses
-port 8000 and health path `/api/health`.
+`Gemfile` and runs through `bundle exec kamal`. The later publish command is
+exactly:
+
+```sh
+bundle exec kamal deploy
+```
+
+Do not run that command until you are ready to publish. It is not a
+Configuration check; local checks stay `uv run pytest`. The recipe is
+`config/deploy.yml`. The proxy target is port 8000 and health path
+`/api/health`.

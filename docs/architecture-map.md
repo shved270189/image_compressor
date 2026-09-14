@@ -13,7 +13,7 @@ frontend: "React + Vite + TypeScript + Tailwind"
 
 # Architecture map — image-compressor
 
-Incremental re-survey of `787a257`..`3236057` (backend, frontend, tests, README) plus the `kamal-deploy` surface. The foundation, image-resize-convert, and image-size-limit implementations are materialized. [Feature tracker](features/image-size-limit/tasks/tracker.md) records the optional Size limit work and browser acceptance. [Scaffold tasks](features/_scaffold/tasks.json) retain setup evidence. Hosted GitHub Actions and public deployment remain unverified. `config/deploy.yml` is absent.
+Incremental re-survey of `787a257`..`3236057` (backend, frontend, tests, README) plus the `kamal-deploy` surface. The foundation, image-resize-convert, and image-size-limit implementations are materialized. [Feature tracker](features/image-size-limit/tasks/tracker.md) records the optional Size limit work and browser acceptance. [Scaffold tasks](features/_scaffold/tasks.json) retain setup evidence. Hosted GitHub Actions and public deployment remain unverified. `config/deploy.yml` records the production recipe.
 
 ## Stack
 
@@ -58,7 +58,7 @@ One image contains backend code and built frontend assets. The browser UI is a l
 | Frontend | `frontend/` | `frontend/src/main.tsx:6` | Local selection/preview, one current request, download/reset and error retry |
 | Development tooling | Repository root | `mise.toml:13` | Sequential setup and concurrent dev servers |
 | Container delivery | Repository root | `Dockerfile:17` | One non-root application image |
-| Deployment tooling | Repository root | `Gemfile:3` | Locked Kamal CLI; no deploy configuration yet |
+| Deployment tooling | Repository root | `Gemfile:3` | Locked Kamal CLI and `config/deploy.yml` recipe |
 | Verification | `tests/`, `.github/workflows/` | `tests/test_smoke.py:58`, `.github/workflows/ci.yml:1` | Shared in-process and live-container smoke scenarios |
 
 ## Conventions
@@ -105,9 +105,7 @@ Open <http://localhost:5173>. Vite proxies `/api` to <http://127.0.0.1:8000>. Ro
 
 `.github/workflows/ci.yml:1` uses mise and locked dependencies for build, pytest, Ruff, ESLint, Bundler checks and the same container smoke scenarios. CI also runs `bundle check && bundle exec kamal version` — `.github/workflows/ci.yml:24`. actionlint passed. Hosted execution is unverified. CI has no deploy job, registry login, or `kamal deploy`.
 
-Kamal 2.12.0 is locked in `Gemfile.lock` and invoked only as `bundle exec kamal` — `Gemfile:3` and `docs/adr/0001-stack-and-development-tools.md:17`. Ruby 4.0.5 is a mise pin for that CLI; do not add `gem:kamal` to `mise.toml`. **Absent today:** `config/` (including `config/deploy.yml`), `.kamal/`, secrets files, accessories, destination files, and a Docker `HEALTHCHECK` instruction. Do not invent those values during survey.
-
-A future `config/deploy.yml` must set `proxy.app_port: 8000` and `proxy.healthcheck.path: /api/health`. Server addresses, domain, registry and credentials belong to that later configuration stage — `docs/adr/0002-single-service-and-kamal.md:17`. The current [roadmap](roadmap.md) still lists public hosting and Kamal deployment as out of scope (local-only product path); existing deployment tooling stays unchanged until a deployment feature is specified.
+Kamal 2.12.0 is locked in `Gemfile.lock` and invoked only as `bundle exec kamal` — `Gemfile:3` and `docs/adr/0001-stack-and-development-tools.md:17`. Ruby 4.0.5 is a mise pin for that CLI; do not add `gem:kamal` to `mise.toml`. `config/deploy.yml` is the committed production recipe: host `138.201.118.229`, Public site names `image.bondev.eu` and `www.image.bondev.eu`, image `shved270189/image_compressor`, registry username `shved270189`, HTTPS on, service `image_compressor`, `builder.arch: amd64`, `proxy.app_port: 8000`, and `proxy.healthcheck.path: /api/health`. Secret values stay in gitignored `.kamal/secrets`. Accessories, destination files, and a Docker `HEALTHCHECK` instruction remain absent. The later publish command is `bundle exec kamal deploy`; this map does not run it. CI has no deploy job.
 
 ## Implemented scope and remaining acceptance
 

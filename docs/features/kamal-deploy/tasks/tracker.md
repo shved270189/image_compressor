@@ -11,7 +11,7 @@
 | T4 | Implement the offline Configuration check success path | ports | Tech Lead | M | T2, T3 | todo |
 | T5 | Fail the Configuration check with named missing fields and secrets | tests | Tech Lead | M | T4 | todo |
 | T6 | Reject committed secrets and production-target mismatch | tests | Tech Lead | S | T1, T4 | todo |
-| T7 | Document the later publish command | docs | Tech Lead | S | T2 | todo |
+| T7 | Document the later publish command | docs | Tech Lead | S | T2 | done |
 | T8 | Keep the compression form and existing smoke unchanged | tests | Tech Lead | S | T2 | todo |
 
 **Total:** 8 tasks, ~4 person-days.
