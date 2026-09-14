@@ -120,31 +120,56 @@ def _read_secrets(path: Path) -> dict[str, str]:
     return values
 
 
-def run_configuration_check(recipe_path: Path, secrets_path: Path) -> tuple[bool, str]:
+def _missing_gaps(recipe_path: Path, secrets_path: Path) -> list[str]:
     if not recipe_path.is_file():
-        return False, "Configuration check failed"
+        return ["missing Deploy configuration"]
     recipe = load_simple_yaml(recipe_path.read_text())
-    proxy = recipe.get("proxy") or {}
-    servers = recipe.get("servers") or {}
-    registry = recipe.get("registry") or {}
-    builder = recipe.get("builder") or {}
-    web_hosts = _as_list(servers.get("web") if isinstance(servers, dict) else None)
+    proxy = recipe.get("proxy") if isinstance(recipe.get("proxy"), dict) else {}
+    servers = recipe.get("servers") if isinstance(recipe.get("servers"), dict) else {}
+    registry = recipe.get("registry") if isinstance(recipe.get("registry"), dict) else {}
+    builder = recipe.get("builder") if isinstance(recipe.get("builder"), dict) else {}
+    healthcheck = proxy.get("healthcheck") if isinstance(proxy.get("healthcheck"), dict) else {}
+    web_hosts = _as_list(servers.get("web"))
     site_names = _as_list(proxy.get("hosts") or proxy.get("host"))
     secrets = _read_secrets(secrets_path)
-    complete = (
-        recipe.get("service") == SERVICE_NAME
-        and recipe.get("image") == IMAGE_NAME
-        and HOST_ADDRESS in web_hosts
-        and all(name in site_names for name in PUBLIC_SITE_NAMES)
-        and proxy.get("ssl") is True
-        and proxy.get("app_port") == LISTENING_PORT
-        and (proxy.get("healthcheck") or {}).get("path") == HEALTH_CHECK_PATH
-        and registry.get("username") == REGISTRY_USERNAME
+    gaps = []
+    if recipe.get("service") != SERVICE_NAME:
+        gaps.append("missing service name")
+    if recipe.get("image") != IMAGE_NAME:
+        gaps.append("missing image name")
+    if HOST_ADDRESS not in web_hosts:
+        gaps.append("missing host address")
+    if any(name not in site_names for name in PUBLIC_SITE_NAMES):
+        gaps.append("missing Public site name")
+    if proxy.get("ssl") is not True:
+        gaps.append("missing HTTPS")
+    if proxy.get("app_port") is None:
+        gaps.append("missing listening port")
+    if healthcheck.get("path") is None:
+        gaps.append("missing health-check path")
+    if registry.get("username") != REGISTRY_USERNAME:
+        gaps.append("missing registry username")
+    if builder.get("arch") != IMAGE_ARCHITECTURE:
+        gaps.append("missing image architecture")
+    if not secrets.get(REGISTRY_PASSWORD_NAME):
+        gaps.append("missing registry password from Secrets file")
+    return gaps
+
+
+def run_configuration_check(recipe_path: Path, secrets_path: Path) -> tuple[bool, str]:
+    gaps = _missing_gaps(recipe_path, secrets_path)
+    if gaps:
+        return False, "Configuration check failed: " + ", ".join(gaps)
+    recipe = load_simple_yaml(recipe_path.read_text())
+    proxy = recipe.get("proxy") if isinstance(recipe.get("proxy"), dict) else {}
+    registry = recipe.get("registry") if isinstance(recipe.get("registry"), dict) else {}
+    healthcheck = proxy.get("healthcheck") if isinstance(proxy.get("healthcheck"), dict) else {}
+    locked = (
+        proxy.get("app_port") == LISTENING_PORT
+        and healthcheck.get("path") == HEALTH_CHECK_PATH
         and REGISTRY_PASSWORD_NAME in _as_list(registry.get("password"))
-        and builder.get("arch") == IMAGE_ARCHITECTURE
-        and bool(secrets.get(REGISTRY_PASSWORD_NAME))
     )
-    if complete:
+    if locked:
         return True, "Configuration check success"
     return False, "Configuration check failed"
 
@@ -170,3 +195,38 @@ def test_configuration_check_succeeds_offline():
 
     secrets = SECRETS_FIXTURE.read_text()
     assert "KAMAL_REGISTRY_PASSWORD=test-registry-password" in secrets
+
+
+def test_configuration_check_names_missing_secrets(tmp_path):
+    ok, message = run_configuration_check(RECIPE_PATH, tmp_path / "absent")
+    assert ok is False
+    assert "success" not in message.lower()
+    assert "registry password" in message
+    assert "Secrets file" in message
+
+
+def test_configuration_check_names_missing_fields(tmp_path):
+    recipe = tmp_path / "deploy.yml"
+    recipe.write_text("builder:\n  arch: amd64\n")
+    ok, message = run_configuration_check(recipe, SECRETS_FIXTURE)
+    assert ok is False
+    assert "success" not in message.lower()
+    for term in (
+        "host address",
+        "Public site name",
+        "image name",
+        "registry username",
+        "HTTPS",
+        "service name",
+        "listening port",
+        "health-check path",
+    ):
+        assert term in message, term
+    assert "SSH" not in message
+
+    one_site = tmp_path / "one-site.yml"
+    one_site.write_text(RECIPE_PATH.read_text().replace("    - www.image.bondev.eu\n", ""))
+    ok, message = run_configuration_check(one_site, SECRETS_FIXTURE)
+    assert ok is False
+    assert "success" not in message.lower()
+    assert "Public site name" in message
