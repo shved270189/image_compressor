@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 RECIPE_PATH = Path("config/deploy.yml")
@@ -164,14 +165,16 @@ def run_configuration_check(recipe_path: Path, secrets_path: Path) -> tuple[bool
     proxy = recipe.get("proxy") if isinstance(recipe.get("proxy"), dict) else {}
     registry = recipe.get("registry") if isinstance(recipe.get("registry"), dict) else {}
     healthcheck = proxy.get("healthcheck") if isinstance(proxy.get("healthcheck"), dict) else {}
-    locked = (
-        proxy.get("app_port") == LISTENING_PORT
-        and healthcheck.get("path") == HEALTH_CHECK_PATH
-        and REGISTRY_PASSWORD_NAME in _as_list(registry.get("password"))
-    )
-    if locked:
-        return True, "Configuration check success"
-    return False, "Configuration check failed"
+    if REGISTRY_PASSWORD_NAME not in _as_list(registry.get("password")):
+        return False, "Configuration check failed"
+    violations = []
+    if proxy.get("app_port") != LISTENING_PORT:
+        violations.append("listening port does not match the application image")
+    if healthcheck.get("path") != HEALTH_CHECK_PATH:
+        violations.append("health-check path does not match the application image")
+    if violations:
+        return False, "Configuration check failed: " + ", ".join(violations)
+    return True, "Configuration check success"
 
 
 def test_configuration_check_succeeds_offline():
@@ -230,3 +233,52 @@ def test_configuration_check_names_missing_fields(tmp_path):
     assert ok is False
     assert "success" not in message.lower()
     assert "Public site name" in message
+
+
+def test_secrets_file_is_gitignored():
+    ignored = subprocess.run(
+        ["git", "check-ignore", "-q", ".kamal/secrets"],
+        check=False,
+    )
+    assert ignored.returncode == 0
+
+
+def test_committed_tree_has_no_secret_values():
+    tracked = subprocess.check_output(["git", "ls-files"], text=True).splitlines()
+    pem = "-----BEGIN " + "PRIVATE KEY-----"
+    openssh = "-----BEGIN " + "OPENSSH PRIVATE KEY-----"
+    rsa = "-----BEGIN " + "RSA PRIVATE KEY-----"
+    for relative in tracked:
+        text = Path(relative).read_text(errors="replace")
+        assert pem not in text, relative
+        assert openssh not in text, relative
+        assert rsa not in text, relative
+        if relative == "tests/fixtures/kamal/secrets":
+            assert "KAMAL_REGISTRY_PASSWORD=test-registry-password" in text
+            continue
+        if relative.startswith("tests/"):
+            continue
+        assert "test-registry-password" not in text, relative
+
+
+def test_recipe_port_and_path_match_application_image():
+    recipe = load_simple_yaml(RECIPE_PATH.read_text())
+    assert recipe["proxy"]["app_port"] == LISTENING_PORT
+    assert recipe["proxy"]["healthcheck"]["path"] == HEALTH_CHECK_PATH
+    assert recipe["registry"]["password"] == [REGISTRY_PASSWORD_NAME]
+
+
+def test_mismatched_port_or_path_is_not_production_target(tmp_path):
+    bad_port = tmp_path / "bad-port.yml"
+    bad_port.write_text(RECIPE_PATH.read_text().replace("app_port: 8000", "app_port: 3000"))
+    ok, message = run_configuration_check(bad_port, SECRETS_FIXTURE)
+    assert ok is False
+    assert "success" not in message.lower()
+    assert "listening port" in message
+
+    bad_path = tmp_path / "bad-path.yml"
+    bad_path.write_text(RECIPE_PATH.read_text().replace("path: /api/health", "path: /"))
+    ok, message = run_configuration_check(bad_path, SECRETS_FIXTURE)
+    assert ok is False
+    assert "success" not in message.lower()
+    assert "health-check path" in message
